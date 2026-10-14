@@ -29,6 +29,11 @@ class Clipboard {
     .concealed,
     .transient
   ]
+  private let rewritableTypes: Set<NSPasteboard.PasteboardType> = [
+    .html,
+    .rtf,
+    .string
+  ]
   private let unpersistableTypes: Set<NSPasteboard.PasteboardType> = [
     .appleWebArchive,
     .safariWebArchve
@@ -230,6 +235,10 @@ class Clipboard {
       return
     }
 
+    if Defaults[.removeTrailingNewlines] {
+      contents = removeTrailingNewlinesOnPasteboard(contents)
+    }
+
     let historyItem = HistoryItem(contents: contents)
 
     if #unavailable(macOS 15.0) {
@@ -341,6 +350,33 @@ class Clipboard {
     }
 
     return newContents
+  }
+
+  // Rewrites a fresh external copy without its trailing newlines, so a plain ⌘V
+  // pastes the trimmed text too. Only a copy made purely of text types is
+  // rewritten: anything else (a spreadsheet's cells, a file) would lose the types
+  // Maccy doesn't store, so it stays as the app left it.
+  @MainActor
+  private func removeTrailingNewlinesOnPasteboard(_ contents: [HistoryItemContent]) -> [HistoryItemContent] {
+    // Item types, not pasteboard.types, which adds legacy aliases like NSStringPboardType.
+    let types = Set(pasteboard.pasteboardItems?.flatMap(\.types) ?? [])
+    guard !types.contains(.fromMaccy),
+          types.allSatisfy({ rewritableTypes.contains($0) || $0.rawValue.hasPrefix("org.nspasteboard.") }) else {
+      return contents
+    }
+
+    let trimmed = removeTrailingNewlines(contents)
+    guard trimmed.count != contents.count || zip(trimmed, contents).contains(where: { $0 !== $1 }) else {
+      return contents
+    }
+
+    pasteboard.clearContents()
+    for content in trimmed {
+      pasteboard.setData(content.value, forType: NSPasteboard.PasteboardType(content.type))
+    }
+    changeCount = pasteboard.changeCount
+
+    return trimmed
   }
 
   private func trimmedRTF(from contents: [HistoryItemContent]) -> Data? {
