@@ -70,6 +70,51 @@ class Storage {
     return unwanted.count
   }
 
+  // Clipboard capture skips a TIFF that comes with a PNG of the same image; this
+  // drops the ones stored before it did.
+  func removeRedundantTIFFs() throws -> Int {
+    let tiff = NSPasteboard.PasteboardType.tiff.rawValue
+    let png = NSPasteboard.PasteboardType.png.rawValue
+    let tiffs = try context.fetch(FetchDescriptor<HistoryItemContent>(predicate: #Predicate { $0.type == tiff }))
+    let redundant = tiffs.filter { $0.item?.contents.contains { $0.type == png } == true }
+
+    guard !redundant.isEmpty else {
+      return 0
+    }
+
+    for content in redundant {
+      content.item?.contents.removeAll { $0 == content }
+      context.delete(content)
+    }
+    context.processPendingChanges()
+    try context.save()
+
+    return redundant.count
+  }
+
+  // `HistoryItemContent.value` moved to external storage; values written before
+  // stay inline in the row until rewritten.
+  func moveContentsToExternalStorage() throws -> Int {
+    let contents = try context.fetch(FetchDescriptor<HistoryItemContent>())
+    var count = 0
+
+    for content in contents {
+      guard let value = content.value else { continue }
+      content.value = nil
+      content.value = Data(value)
+      count += 1
+    }
+
+    guard count > 0 else {
+      return 0
+    }
+
+    context.processPendingChanges()
+    try context.save()
+
+    return count
+  }
+
   // Titles stored before the sanitization in `HistoryItem.generateTitle()` may
   // contain scalars that hang CoreText on macOS 26. Such an item makes Maccy
   // spin at 100% CPU on every launch without ever drawing its window, so the

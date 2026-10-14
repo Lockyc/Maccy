@@ -418,6 +418,32 @@ class HistoryTests: XCTestCase { // swiftlint:disable:this type_body_length
     try assertStorageCounts(items: 1, contents: 1)
   }
 
+  func testRemovingRedundantTIFFs() throws {
+    let png = NSPasteboard.PasteboardType.png.rawValue
+    let tiff = NSPasteboard.PasteboardType.tiff.rawValue
+    let both = history.add(historyItem("both"))
+    both.item.contents.append(HistoryItemContent(type: png, value: Data(repeating: 0x1, count: 16)))
+    both.item.contents.append(HistoryItemContent(type: tiff, value: Data(repeating: 0x2, count: 64)))
+    let tiffOnly = history.add(historyItem("tiff-only"))
+    tiffOnly.item.contents.append(HistoryItemContent(type: tiff, value: Data(repeating: 0x3, count: 64)))
+    try Storage.shared.context.save()
+
+    XCTAssertEqual(try Storage.shared.removeRedundantTIFFs(), 1)
+    XCTAssertEqual(try Storage.shared.removeRedundantTIFFs(), 0)
+    XCTAssertEqual(Set(both.item.contents.map(\.type)), [NSPasteboard.PasteboardType.string.rawValue, png])
+    XCTAssertEqual(tiffOnly.item.contents.map(\.type).last, tiff)
+    try assertStorageCounts(items: 2, contents: 4)
+  }
+
+  func testMovingContentsToExternalStorageKeepsValues() throws {
+    let item = history.add(historyItem("kept"))
+    try Storage.shared.context.save()
+
+    XCTAssertEqual(try Storage.shared.moveContentsToExternalStorage(), 1)
+    XCTAssertEqual(item.item.text, "kept")
+    try assertStorageCounts(items: 1, contents: 1)
+  }
+
   private func assertStorageCounts(
     items: Int,
     contents: Int,

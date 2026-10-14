@@ -397,6 +397,40 @@ class ClipboardTests: XCTestCase {
     waitForExpectations(timeout: 2)
   }
 
+  func testDropsTIFFWhenPNGPresent() {
+    let hookExpectation = expectation(description: "Hook is called")
+    clipboard.onNewCopy({ (item: HistoryItem) in
+      XCTAssertEqual(item.contents.map({ $0.type }), [NSPasteboard.PasteboardType.png.rawValue])
+      hookExpectation.fulfill()
+    })
+
+    let bitmap = NSBitmapImageRep(data: image.tiffRepresentation!)!
+    let item = NSPasteboardItem()
+    item.setData(bitmap.representation(using: .png, properties: [:])!, forType: .png)
+    item.setData(bitmap.tiffRepresentation!, forType: .tiff)
+
+    clipboard.start()
+    pasteboard.clearContents()
+    pasteboard.writeObjects([item])
+
+    waitForExpectations(timeout: 2)
+  }
+
+  func testCopyOffersTIFFFromPNG() {
+    let png = NSBitmapImageRep(data: image.tiffRepresentation!)!.representation(using: .png, properties: [:])!
+    let item = HistoryItem()
+    Storage.shared.context.insert(item)
+    item.contents = [HistoryItemContent(type: NSPasteboard.PasteboardType.png.rawValue, value: png)]
+    clipboard.copy(item)
+    XCTAssertEqual(pasteboard.data(forType: .png), png)
+    let tiff = pasteboard.data(forType: .tiff)
+    XCTAssertNotNil(tiff)
+    XCTAssertEqual(
+      tiff.flatMap(NSBitmapImageRep.init(data:))?.pixelsWide,
+      NSBitmapImageRep(data: png)?.pixelsWide
+    )
+  }
+
   func testRemovesDisabledTypes() {
     Defaults[.enabledPasteboardTypes] = [.fileURL]
 
