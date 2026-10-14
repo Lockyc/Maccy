@@ -173,6 +173,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       _ = try? Storage.shared.removeUnpersistableContents()
     }
 
+    ensureMigration(key: "2026-10-14-remove-redundant-tiffs") {
+      _ = try? Storage.shared.removeRedundantTIFFs()
+    }
+
+    ensureMigration(key: "2026-10-14-move-contents-to-external-storage") {
+      _ = try? Storage.shared.moveContentsToExternalStorage()
+    }
+
     // The following defaults are not used in Maccy 2.x
     // and should be removed in 3.x.
     // - LaunchAtLogin__hasMigrated

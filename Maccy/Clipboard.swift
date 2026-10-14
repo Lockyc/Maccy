@@ -13,6 +13,8 @@ class Clipboard {
   private let pasteboard = NSPasteboard.general
 
   private var timer: Timer?
+  // NSPasteboard doesn't retain a type owner.
+  private var tiffProvider: TIFFProvider?
 
   private let dynamicTypePrefix = "dyn."
   private let microsoftSourcePrefix = "com.microsoft.ole.source."
@@ -118,6 +120,12 @@ class Clipboard {
     }
     pasteboard.writeObjects(fileURLItems)
 
+    if let png = contents.first(where: { $0.type == NSPasteboard.PasteboardType.png.rawValue })?.value,
+       !contents.contains(where: { $0.type == NSPasteboard.PasteboardType.tiff.rawValue }) {
+      tiffProvider = TIFFProvider(png: png)
+      pasteboard.addTypes([.tiff], owner: tiffProvider)
+    }
+
     pasteboard.setString("", forType: .fromMaccy)
     pasteboard.setString(item.application ?? "", forType: .source)
     sync()
@@ -218,6 +226,12 @@ class Clipboard {
       types = types
         .subtracting(disabledTypes)
         .filter(isPersistable)
+
+      // Images usually arrive as both PNG and an uncompressed TIFF of the same pixels;
+      // the TIFF is ~10x larger. copy(_:) offers it back on demand from the PNG.
+      if types.contains(.png) {
+        types.remove(.tiff)
+      }
 
       // Avoid reading Microsoft Word links from bookmarks and cross-references.
       // https://github.com/p0deje/Maccy/issues/613
@@ -417,6 +431,20 @@ class Clipboard {
     }
 
     return newContents
+  }
+}
+
+// Supplies a TIFF converted from a stored PNG, only when a receiving app asks for one.
+private class TIFFProvider: NSObject, NSPasteboardTypeOwner {
+  let png: Data
+
+  init(png: Data) {
+    self.png = png
+  }
+
+  func pasteboard(_ sender: NSPasteboard, provideDataForType type: NSPasteboard.PasteboardType) {
+    guard type == .tiff, let tiff = NSBitmapImageRep(data: png)?.tiffRepresentation else { return }
+    sender.setData(tiff, forType: .tiff)
   }
 }
 
