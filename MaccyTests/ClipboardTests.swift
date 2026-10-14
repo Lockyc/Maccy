@@ -107,6 +107,48 @@ class ClipboardTests: XCTestCase {
     waitForExpectations(timeout: 2)
   }
 
+  func testNewCopyHasTrailingNewlinesRemoved() {
+    Defaults[.removeTrailingNewlines] = true
+    defer { Defaults.reset(.removeTrailingNewlines) }
+    var captured: HistoryItem?
+    clipboard.onNewCopy({ captured = $0 })
+    pasteboard.declareTypes([.string, .html], owner: nil)
+    pasteboard.setString("foo\n\n", forType: .string)
+    pasteboard.setString("<b>foo</b><br><br>", forType: .html)
+    clipboard.checkForChangesInPasteboard()
+    XCTAssertEqual(pasteboard.string(forType: .string), "foo")
+    XCTAssertNil(pasteboard.data(forType: .html))
+    let rtf = pasteboard.data(forType: .rtf).flatMap { NSAttributedString(rtf: $0, documentAttributes: nil) }
+    XCTAssertEqual(rtf?.string, "foo")
+    XCTAssertEqual(captured?.contents.first { $0.type == stringType.rawValue }?.value, "foo".data(using: .utf8))
+    // The rewrite itself isn't recorded as another copy.
+    captured = nil
+    clipboard.checkForChangesInPasteboard()
+    XCTAssertNil(captured)
+  }
+
+  func testNewCopyWithOtherTypesIsLeftAlone() {
+    Defaults[.removeTrailingNewlines] = true
+    defer { Defaults.reset(.removeTrailingNewlines) }
+    clipboard.onNewCopy({ _ in })
+    pasteboard.declareTypes([.string, customType], owner: nil)
+    pasteboard.setString("foo\n", forType: .string)
+    pasteboard.setString("cells", forType: customType)
+    clipboard.checkForChangesInPasteboard()
+    XCTAssertEqual(pasteboard.string(forType: .string), "foo\n")
+    XCTAssertEqual(pasteboard.string(forType: customType), "cells")
+  }
+
+  func testNewCopyKeepsTrailingNewlinesWhenDisabled() {
+    Defaults[.removeTrailingNewlines] = false
+    defer { Defaults.reset(.removeTrailingNewlines) }
+    clipboard.onNewCopy({ _ in })
+    pasteboard.declareTypes([.string], owner: nil)
+    pasteboard.setString("foo\n", forType: .string)
+    clipboard.checkForChangesInPasteboard()
+    XCTAssertEqual(pasteboard.string(forType: .string), "foo\n")
+  }
+
   func testIgnoreEventsIsEnabled() {
     Defaults[.ignoreEvents] = true
 
