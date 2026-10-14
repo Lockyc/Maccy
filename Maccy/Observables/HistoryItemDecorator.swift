@@ -28,37 +28,24 @@ class HistoryItemDecorator: Identifiable, Hashable, HasVisibility {
   var shortcuts: [KeyShortcut] = []
 
   // Rows read this on every render; the Launch Services lookup is cached for the item's lifetime.
-  var application: String? {
-    if let cachedApplication {
-      return cachedApplication
-    }
-
-    let application: String?
+  @ObservationIgnored
+  private(set) lazy var application: String? = {
     if item.universalClipboard {
-      application = "iCloud"
-    } else if let bundle = item.application,
-      let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundle) {
-      application = url.deletingPathExtension().lastPathComponent
-    } else {
-      application = nil
+      return "iCloud"
     }
 
-    cachedApplication = .some(application)
-    return application
-  }
-  @ObservationIgnored private var cachedApplication: String??
+    guard let bundle = item.application,
+      let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundle)
+    else {
+      return nil
+    }
+
+    return url.deletingPathExtension().lastPathComponent
+  }()
 
   // Rows read this on every render; cached so the full image isn't decoded again after cleanupImages().
-  private var imagePixelSize: NSSize? {
-    if let cachedImagePixelSize {
-      return cachedImagePixelSize
-    }
-
-    let size = item.image?.pixelSize
-    cachedImagePixelSize = .some(size)
-    return size
-  }
-  @ObservationIgnored private var cachedImagePixelSize: NSSize??
+  @ObservationIgnored
+  private lazy var imagePixelSize: NSSize? = item.image?.pixelSize
 
   var hasImage: Bool { item.image != nil }
   var hasFileURLs: Bool { !item.fileURLs.isEmpty }
