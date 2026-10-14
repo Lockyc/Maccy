@@ -27,19 +27,38 @@ class HistoryItemDecorator: Identifiable, Hashable, HasVisibility {
   }
   var shortcuts: [KeyShortcut] = []
 
+  // Rows read this on every render; the Launch Services lookup is cached for the item's lifetime.
   var application: String? {
+    if let cachedApplication {
+      return cachedApplication
+    }
+
+    let application: String?
     if item.universalClipboard {
-      return "iCloud"
+      application = "iCloud"
+    } else if let bundle = item.application,
+      let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundle) {
+      application = url.deletingPathExtension().lastPathComponent
+    } else {
+      application = nil
     }
 
-    guard let bundle = item.application,
-      let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundle)
-    else {
-      return nil
-    }
-
-    return url.deletingPathExtension().lastPathComponent
+    cachedApplication = .some(application)
+    return application
   }
+  @ObservationIgnored private var cachedApplication: String??
+
+  // Rows read this on every render; cached so the full image isn't decoded again after cleanupImages().
+  private var imagePixelSize: NSSize? {
+    if let cachedImagePixelSize {
+      return cachedImagePixelSize
+    }
+
+    let size = item.image?.pixelSize
+    cachedImagePixelSize = .some(size)
+    return size
+  }
+  @ObservationIgnored private var cachedImagePixelSize: NSSize??
 
   var hasImage: Bool { item.image != nil }
   var hasFileURLs: Bool { !item.fileURLs.isEmpty }
@@ -78,8 +97,7 @@ class HistoryItemDecorator: Identifiable, Hashable, HasVisibility {
   // Describe the complete item independently of its potentially truncated visual content.
   var accessibilityLabel: String {
     var parts: [String] = []
-    if hasImage, let image = item.image {
-      let size = image.pixelSize
+    if let size = imagePixelSize {
       parts.append(
         String(
           format: NSLocalizedString("history_item_image_accessibility_label_no_app", comment: ""),
