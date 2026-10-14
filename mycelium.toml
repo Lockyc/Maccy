@@ -1,0 +1,12 @@
+name    = "Maccy"
+summary = "Personal fork of the Maccy macOS clipboard manager, built and installed locally over the upstream app — trims trailing newlines, keeps the preview open, and stores images lighter"
+kind    = "app"
+status  = "active"
+tags    = ["clipboard", "macos", "fork"]
+stack   = ["swift", "swiftui", "swiftdata"]
+
+# Fork-only files are kept to a minimum so upstream merges stay conflict-free, and the
+# app installs from `just install`, not an installer script.
+[fleet]
+exempt      = ["hookhost", "hookspath", "installer", "roadmap"]
+exempt_note = "upstream fork; fork-only surface kept minimal"
