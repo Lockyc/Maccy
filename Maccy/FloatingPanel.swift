@@ -89,6 +89,9 @@ class FloatingPanel<Content: View>: NSPanel, NSWindowDelegate {
     let finalHeight = max(min(height, size.height), miniumHeight)
     setContentSize(NSSize(width: finalWidth, height: finalHeight))
     setFrameOrigin(popupPosition.origin(size: frame.size, statusBarButton: statusBarButton))
+    if Defaults[.previewAlwaysOpen] {
+      AppState.shared.preview.openWithoutAnimation(window: self)
+    }
     orderFrontRegardless()
     makeKey()
     isPresented = true
