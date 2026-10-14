@@ -21,8 +21,9 @@ rather than `Maccy.xcodeproj`.
 `just test`
 
 Signing is the Developer ID identity named by `team` in `justfile`. Changing the
-signing identity invalidates the Accessibility grant (System Settings → Privacy &
-Security → Accessibility), which Maccy needs to paste.
+signing identity invalidates the Accessibility grant, which Maccy needs to paste
+(System Settings → Privacy & Security → Device Control and Data Access; opens
+directly with `open "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"`).
 
 ## Footguns
 
