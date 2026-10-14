@@ -92,6 +92,10 @@ class Clipboard {
       contents = clearFormatting(contents)
     }
 
+    if Defaults[.removeTrailingNewlines] {
+      contents = removeTrailingNewlines(contents)
+    }
+
     for content in contents {
       guard content.type != NSPasteboard.PasteboardType.fileURL.rawValue else { continue }
       pasteboard.setData(content.value, forType: NSPasteboard.PasteboardType(content.type))
@@ -309,6 +313,56 @@ class Clipboard {
     NSApp.hide(self)
   }
 
+  // Returns new contents rather than mutating, so the stored history item keeps its
+  // original text. HTML can't be trimmed in place, so rich text comes out as a single
+  // trimmed RTF, built from the RTF when there is one and the HTML otherwise.
+  private func removeTrailingNewlines(_ contents: [HistoryItemContent]) -> [HistoryItemContent] {
+    guard let string = contents.first(where: { NSPasteboard.PasteboardType($0.type) == .string })
+      .flatMap({ $0.value })
+      .flatMap({ String(data: $0, encoding: .utf8) }) else {
+      return contents
+    }
+    let trimmed = string.trimmingTrailingNewlines()
+    guard trimmed != string else { return contents }
+
+    let rtf = trimmedRTF(from: contents)
+    var newContents: [HistoryItemContent] = contents.compactMap { content in
+      switch NSPasteboard.PasteboardType(content.type) {
+      case .string:
+        return HistoryItemContent(type: content.type, value: trimmed.data(using: .utf8))
+      case .rtf, .html:
+        return nil
+      default:
+        return content
+      }
+    }
+    if let rtf {
+      newContents.append(HistoryItemContent(type: NSPasteboard.PasteboardType.rtf.rawValue, value: rtf))
+    }
+
+    return newContents
+  }
+
+  private func trimmedRTF(from contents: [HistoryItemContent]) -> Data? {
+    let sources: [(NSPasteboard.PasteboardType, NSAttributedString.DocumentType)] = [(.rtf, .rtf), (.html, .html)]
+    for (type, documentType) in sources {
+      guard let data = contents.first(where: { NSPasteboard.PasteboardType($0.type) == type })?.value,
+            let attributed = try? NSMutableAttributedString(
+              data: data,
+              options: [.documentType: documentType, .characterEncoding: String.Encoding.utf8.rawValue],
+              documentAttributes: nil
+            ) else {
+        continue
+      }
+
+      let length = (attributed.string.trimmingTrailingNewlines() as NSString).length
+      attributed.deleteCharacters(in: NSRange(location: length, length: attributed.length - length))
+      return attributed.rtf(from: NSRange(location: 0, length: attributed.length), documentAttributes: [:])
+    }
+
+    return nil
+  }
+
   private func clearFormatting(_ contents: [HistoryItemContent]) -> [HistoryItemContent] {
     var newContents: [HistoryItemContent] = contents
     let stringContents = contents.filter { NSPasteboard.PasteboardType($0.type) == .string }
@@ -327,5 +381,15 @@ class Clipboard {
     }
 
     return newContents
+  }
+}
+
+private extension String {
+  func trimmingTrailingNewlines() -> String {
+    var result = self
+    while let last = result.unicodeScalars.last, CharacterSet.newlines.contains(last) {
+      result.unicodeScalars.removeLast()
+    }
+    return result
   }
 }

@@ -28,10 +28,11 @@ install: build
     ditto {{app}} /Applications/Maccy.app
     open /Applications/Maccy.app
 
-# Run the unit tests
-test:
-    xcodebuild -project Maccy.xcodeproj -scheme Maccy -derivedDataPath build -quiet \
-      -only-testing:MaccyTests test
+# Run the unit tests (ad-hoc signed; pass e.g. only=MaccyTests/ClipboardTests to narrow)
+test only="MaccyTests":
+    xcodebuild -project Maccy.xcodeproj -scheme Maccy -derivedDataPath build/test -quiet \
+      DEVELOPMENT_TEAM= CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- PROVISIONING_PROFILE_SPECIFIER= \
+      -only-testing:{{only}} test
 
 # Merge upstream master into main
 sync:

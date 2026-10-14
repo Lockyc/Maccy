@@ -224,6 +224,76 @@ class ClipboardTests: XCTestCase {
     XCTAssertEqual(pasteboard.string(forType: .source), "com.foo.bar")
   }
 
+  func testCopyRemovesTrailingNewlines() {
+    Defaults[.removeTrailingNewlines] = true
+    defer { Defaults.reset(.removeTrailingNewlines) }
+    let richString = NSAttributedString(string: "foo\nbar\n\n", attributes: [.foregroundColor: NSColor.red])
+    let contents = [
+      HistoryItemContent(type: stringType.rawValue, value: "foo\nbar\r\n\n".data(using: .utf8)!),
+      HistoryItemContent(type: rtfType.rawValue,
+                         value: richString.rtf(from: NSRange(location: 0, length: richString.length),
+                                               documentAttributes: [:])),
+      HistoryItemContent(type: htmlType.rawValue, value: "<p>foo</p><p>bar</p>".data(using: .utf8)!)
+    ]
+    let item = HistoryItem()
+    Storage.shared.context.insert(item)
+    item.contents = contents
+    clipboard.copy(item)
+    XCTAssertEqual(pasteboard.string(forType: .string), "foo\nbar")
+    let rtf = NSAttributedString(rtf: pasteboard.data(forType: .rtf)!, documentAttributes: nil)!
+    XCTAssertEqual(rtf.string, "foo\nbar")
+    let color = rtf.attribute(.foregroundColor, at: 0, effectiveRange: nil) as? NSColor
+    XCTAssertEqual(color?.usingColorSpace(.sRGB)?.redComponent, 1)
+    XCTAssertNil(pasteboard.data(forType: .html))
+    // The stored history item keeps its original value.
+    XCTAssertEqual(item.contents.first { $0.type == stringType.rawValue }?.value,
+                   "foo\nbar\r\n\n".data(using: .utf8)!)
+  }
+
+  func testCopyRemovesTrailingNewlinesFromHTMLOnlyRichText() {
+    Defaults[.removeTrailingNewlines] = true
+    defer { Defaults.reset(.removeTrailingNewlines) }
+    let item = HistoryItem()
+    Storage.shared.context.insert(item)
+    item.contents = [
+      HistoryItemContent(type: stringType.rawValue, value: "foo\n".data(using: .utf8)!),
+      HistoryItemContent(type: htmlType.rawValue, value: "<b>foo</b><br>".data(using: .utf8)!)
+    ]
+    clipboard.copy(item)
+    XCTAssertEqual(pasteboard.string(forType: .string), "foo")
+    XCTAssertNil(pasteboard.data(forType: .html))
+    let rtf = NSAttributedString(rtf: pasteboard.data(forType: .rtf)!, documentAttributes: nil)!
+    XCTAssertEqual(rtf.string, "foo")
+  }
+
+  func testCopyKeepsTrailingNewlinesWhenDisabled() {
+    Defaults[.removeTrailingNewlines] = false
+    defer { Defaults.reset(.removeTrailingNewlines) }
+    let item = HistoryItem()
+    Storage.shared.context.insert(item)
+    item.contents = [
+      HistoryItemContent(type: stringType.rawValue, value: "foo\n".data(using: .utf8)!),
+      HistoryItemContent(type: htmlType.rawValue, value: "<p>foo</p>".data(using: .utf8)!)
+    ]
+    clipboard.copy(item)
+    XCTAssertEqual(pasteboard.string(forType: .string), "foo\n")
+    XCTAssertNotNil(pasteboard.data(forType: .html))
+  }
+
+  func testCopyWithoutTrailingNewlinesLeavesOtherTextAlone() {
+    Defaults[.removeTrailingNewlines] = true
+    defer { Defaults.reset(.removeTrailingNewlines) }
+    let item = HistoryItem()
+    Storage.shared.context.insert(item)
+    item.contents = [
+      HistoryItemContent(type: stringType.rawValue, value: "\nfoo  ".data(using: .utf8)!),
+      HistoryItemContent(type: htmlType.rawValue, value: "<p>foo</p>".data(using: .utf8)!)
+    ]
+    clipboard.copy(item)
+    XCTAssertEqual(pasteboard.string(forType: .string), "\nfoo  ")
+    XCTAssertNotNil(pasteboard.data(forType: .html))
+  }
+
   func testCopyString() {
     clipboard.copyInMaccy("foo")
     XCTAssertEqual(pasteboard.string(forType: .string), "foo")
