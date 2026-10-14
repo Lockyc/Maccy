@@ -439,8 +439,10 @@ class HistoryTests: XCTestCase { // swiftlint:disable:this type_body_length
     let item = history.add(historyItem("kept"))
     try Storage.shared.context.save()
 
+    let original = item.item.contents
     XCTAssertEqual(try Storage.shared.moveContentsToExternalStorage(), 1)
     XCTAssertEqual(item.item.text, "kept")
+    XCTAssertNotEqual(item.item.contents, original)
     try assertStorageCounts(items: 1, contents: 1)
   }
 

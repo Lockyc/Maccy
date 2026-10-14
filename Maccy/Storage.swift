@@ -93,15 +93,17 @@ class Storage {
   }
 
   // `HistoryItemContent.value` moved to external storage; values written before
-  // stay inline in the row until rewritten.
+  // stay inline in the row. Core Data skips writing a value equal to the stored
+  // one, so each content is replaced by a fresh copy rather than reassigned.
   func moveContentsToExternalStorage() throws -> Int {
     let contents = try context.fetch(FetchDescriptor<HistoryItemContent>())
     var count = 0
 
     for content in contents {
-      guard let value = content.value else { continue }
-      content.value = nil
-      content.value = Data(value)
+      guard let item = content.item, content.value != nil else { continue }
+      item.contents.append(HistoryItemContent(type: content.type, value: content.value))
+      item.contents.removeAll { $0 == content }
+      context.delete(content)
       count += 1
     }
 

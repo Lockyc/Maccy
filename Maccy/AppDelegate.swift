@@ -177,7 +177,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       _ = try? Storage.shared.removeRedundantTIFFs()
     }
 
-    ensureMigration(key: "2026-10-14-move-contents-to-external-storage") {
+    ensureMigration(key: "2026-10-14-move-contents-to-external-storage-by-copy") {
       _ = try? Storage.shared.moveContentsToExternalStorage()
     }
 
