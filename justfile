@@ -24,10 +24,15 @@ build:
 # Build, then replace /Applications/Maccy.app and relaunch it
 install: build
     -osascript -e 'quit app "Maccy"'
-    while pgrep -x Maccy >/dev/null; do sleep 0.2; done
+    for _ in $(seq 30); do pgrep -x Maccy >/dev/null || break; sleep 0.1; done
+    pgrep -x Maccy >/dev/null && killall -9 Maccy || true
+    while pgrep -x Maccy >/dev/null; do sleep 0.1; done
     rm -rf /Applications/Maccy.app
     ditto {{app}} /Applications/Maccy.app
     for _ in 1 2 3 4 5; do open /Applications/Maccy.app && break; sleep 1; done
+
+# Pre-merge gate: the full unit-test suite
+gate: test
 
 # Run the unit tests (ad-hoc signed; pass e.g. only=MaccyTests/ClipboardTests to narrow)
 test only="MaccyTests":
