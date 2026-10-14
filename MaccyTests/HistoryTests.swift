@@ -431,7 +431,7 @@ class HistoryTests: XCTestCase { // swiftlint:disable:this type_body_length
     XCTAssertEqual(try Storage.shared.removeRedundantTIFFs(), 1)
     XCTAssertEqual(try Storage.shared.removeRedundantTIFFs(), 0)
     XCTAssertEqual(Set(both.item.contents.map(\.type)), [NSPasteboard.PasteboardType.string.rawValue, png])
-    XCTAssertEqual(tiffOnly.item.contents.map(\.type).last, tiff)
+    XCTAssertEqual(Set(tiffOnly.item.contents.map(\.type)), [NSPasteboard.PasteboardType.string.rawValue, tiff])
     try assertStorageCounts(items: 2, contents: 4)
   }
 
