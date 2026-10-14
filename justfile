@@ -27,7 +27,7 @@ install: build
     while pgrep -x Maccy >/dev/null; do sleep 0.2; done
     rm -rf /Applications/Maccy.app
     ditto {{app}} /Applications/Maccy.app
-    open /Applications/Maccy.app
+    for _ in 1 2 3 4 5; do open /Applications/Maccy.app && break; sleep 1; done
 
 # Run the unit tests (ad-hoc signed; pass e.g. only=MaccyTests/ClipboardTests to narrow)
 test only="MaccyTests":
