@@ -4,7 +4,10 @@ import Sparkle
 import SwiftUI
 
 class AppDelegate: NSObject, NSApplicationDelegate {
-  nonisolated static let isTesting = CommandLine.arguments.contains("enable-testing")
+  // Unit tests run inside an app with Maccy's bundle ID, so they share its sandbox container
+  // and would otherwise use the real history store and preferences.
+  nonisolated static let isUnitTesting = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+  nonisolated static let isTesting = CommandLine.arguments.contains("enable-testing") || isUnitTesting
   var panel: FloatingPanel<ContentView>!
 
   @objc

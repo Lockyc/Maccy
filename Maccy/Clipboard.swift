@@ -10,7 +10,8 @@ class Clipboard {
   private var onNewCopyHooks: [OnNewCopyHook] = []
   var changeCount: Int
 
-  private let pasteboard = NSPasteboard.general
+  // Unit tests get a private pasteboard so a running Maccy doesn't record their copies.
+  let pasteboard = AppDelegate.isUnitTesting ? NSPasteboard(name: .init("org.p0deje.Maccy.unit-tests")) : .general
 
   private var timer: Timer?
   // NSPasteboard doesn't retain a type owner.
