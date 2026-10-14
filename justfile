@@ -24,6 +24,7 @@ build:
 # Build, then replace /Applications/Maccy.app and relaunch it
 install: build
     -osascript -e 'quit app "Maccy"'
+    while pgrep -x Maccy >/dev/null; do sleep 0.2; done
     rm -rf /Applications/Maccy.app
     ditto {{app}} /Applications/Maccy.app
     open /Applications/Maccy.app
