@@ -15,8 +15,8 @@ nonisolated extension Defaults.Keys {
   // UI Tests bundle preferences
   static let testingSuiteName = "\(Bundle.main.bundleIdentifier ?? "org.p0deje.Maccy").uitests"
 
-  // When UI tests run with the `enable-testing` argument, window and pin
-  // preferences are stored in a separate xcuitest bundle
+  // Under test (see AppDelegate.isTesting), preferences are stored in a
+  // separate suite
   nonisolated(unsafe) private static let preferencesSuite: UserDefaults = AppDelegate.isTesting
     ? (UserDefaults(suiteName: testingSuiteName) ?? .standard)
     : .standard

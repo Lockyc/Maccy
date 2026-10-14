@@ -80,13 +80,9 @@ class History: ItemsContainer { // swiftlint:disable:this type_body_length
   @ObservationIgnored
   private var sessionLog: [Int: HistoryItem] = [:]
 
-#if DEBUG
-  static let isRunningUnitTests = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
-#endif
-
   init() {
     #if DEBUG
-    guard !Self.isRunningUnitTests else { return }
+    guard !AppDelegate.isUnitTesting else { return }
     #endif
 
     Task {
