@@ -9,6 +9,7 @@ struct AppearanceSettingsPane: View {
   @Default(.pinTo) private var pinTo
   @Default(.imageMaxHeight) private var imageHeight
   @Default(.openPreviewAutomatically) private var openPreviewAutomatically
+  @Default(.previewAlwaysOpen) private var previewAlwaysOpen
   @Default(.previewDelay) private var previewDelay
   @Default(.highlightMatch) private var highlightMatch
   @Default(.menuIcon) private var menuIcon
@@ -106,9 +107,13 @@ struct AppearanceSettingsPane: View {
       }
 
       Settings.Section(title: "") {
+        Defaults.Toggle(key: .previewAlwaysOpen) {
+          Text("PreviewAlwaysOpen", tableName: "AppearanceSettings")
+        }
         Defaults.Toggle(key: .openPreviewAutomatically) {
           Text("OpenPreviewAutomatically", tableName: "AppearanceSettings")
         }
+        .disabled(previewAlwaysOpen)
       }
 
       Settings.Section(label: { Text("PreviewDelay", tableName: "AppearanceSettings") }) {
@@ -121,7 +126,7 @@ struct AppearanceSettingsPane: View {
             .labelsHidden()
             .accessibilityLabel(Text("PreviewDelay", tableName: "AppearanceSettings"))
         }
-        .disabled(!openPreviewAutomatically)
+        .disabled(previewAlwaysOpen || !openPreviewAutomatically)
       }
 
       Settings.Section(

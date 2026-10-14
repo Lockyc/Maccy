@@ -207,6 +207,19 @@ class SlideoutController {
     slideoutWidth = slideoutResizeWidth
   }
 
+  // Shows the preview alongside a popup that is about to appear, without the
+  // slide-out animation. The window keeps its height and widens by the preview.
+  func openWithoutAnimation(window: NSWindow) {
+    var frame = window.frame
+    frame.size.width = contentWidth + slideoutWidth
+    placement = computePlacement(window: window, for: frame.size)
+    if placement == .left {
+      frame.origin.x -= slideoutWidth
+    }
+    state = .open
+    window.setFrame(frame, display: false)
+  }
+
   func endResize() {
     logger.info("Ended resize. Mode was \(resizingMode)")
     switch resizingMode {
