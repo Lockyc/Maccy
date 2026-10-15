@@ -6,7 +6,8 @@ tags    = ["clipboard", "macos", "fork"]
 stack   = ["swift", "swiftui", "swiftdata"]
 
 # Fork-only files are kept to a minimum so upstream merges stay conflict-free, and the
-# app installs from `just install`, not an installer script.
+# app installs from `just install`, not an installer script. A fork of someone else's
+# app stays off the lockyc profile README.
 [fleet]
-exempt      = ["hookhost", "hookspath", "installer", "roadmap"]
+exempt      = ["hookhost", "hookspath", "installer", "roadmap", "profile"]
 exempt_note = "upstream fork; fork-only surface kept minimal"
