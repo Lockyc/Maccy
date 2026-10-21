@@ -150,6 +150,25 @@ class HistoryItemTests: XCTestCase {
     XCTAssertEqual(item2.pin, "")
   }
 
+  func testUnsavedContentIsReadable() {
+    let content = HistoryItemContent(type: NSPasteboard.PasteboardType.string.rawValue, value: Data())
+    XCTAssertFalse(content.isGone)
+    XCTAssertEqual(HistoryItem(contents: [content]).liveContents, [content])
+  }
+
+  func testDeletedContentIsGone() throws {
+    let item = historyItem("foo")
+    try Storage.shared.context.save()
+    let content = item.contents[0]
+    XCTAssertFalse(content.isGone)
+
+    Storage.shared.context.delete(content)
+    XCTAssertTrue(content.isGone)
+
+    try Storage.shared.context.save()
+    XCTAssertTrue(content.isGone)
+  }
+
   private func historyItem(_ value: String?) -> HistoryItem {
     let contents = [
       HistoryItemContent(
