@@ -94,7 +94,7 @@ class Clipboard {
     guard let item else { return }
 
     pasteboard.clearContents()
-    var contents = item.contents
+    var contents = item.liveContents
 
     if removeFormatting {
       contents = clearFormatting(contents)

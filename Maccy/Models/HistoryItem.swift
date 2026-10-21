@@ -235,8 +235,11 @@ class HistoryItem {
     universalClipboard && contentData([.html, .tiff, .png, .jpeg, .rtf, .string, .heic]) != nil
   }
 
+  // Contents whose values can still be read.
+  var liveContents: [HistoryItemContent] { contents.filter { !$0.isGone } }
+
   private func contentData(_ types: [NSPasteboard.PasteboardType]) -> Data? {
-    let content = contents.first(where: { content in
+    let content = liveContents.first(where: { content in
       return types.contains(NSPasteboard.PasteboardType(content.type))
     })
 
@@ -244,7 +247,7 @@ class HistoryItem {
   }
 
   private func allContentData(_ types: [NSPasteboard.PasteboardType]) -> [Data] {
-    return contents
+    return liveContents
       .filter { types.contains(NSPasteboard.PasteboardType($0.type)) }
       .compactMap { $0.value }
   }
