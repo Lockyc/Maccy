@@ -38,7 +38,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
   private var statusItemVisibilityObserver: NSKeyValueObservation?
 
+  // A launched app's stderr goes nowhere, and it carries both `logger` output and the
+  // message of a Swift runtime abort, which crash reports omit. Send it to
+  // ~/Library/Containers/org.p0deje.Maccy/Data/Library/Logs/Maccy.log, keeping the previous
+  // launch's log as Maccy.previous.log so the run that crashed survives the relaunch.
+  private func redirectStandardErrorToLogFile() {
+    guard !Self.isTesting else { return }
+
+    let logs = URL.libraryDirectory.appending(path: "Logs")
+    let current = logs.appending(path: "Maccy.log")
+    let previous = logs.appending(path: "Maccy.previous.log")
+    try? FileManager.default.createDirectory(at: logs, withIntermediateDirectories: true)
+    try? FileManager.default.removeItem(at: previous)
+    try? FileManager.default.moveItem(at: current, to: previous)
+
+    let fd = open(current.path, O_WRONLY | O_CREAT | O_APPEND, 0o644)
+    guard fd >= 0 else { return }
+    dup2(fd, STDERR_FILENO)
+    close(fd)
+  }
+
   func applicationWillFinishLaunching(_ notification: Notification) { // swiftlint:disable:this function_body_length
+    redirectStandardErrorToLogFile()
+
     #if DEBUG
     if Self.isTesting {
       SPUUpdater(hostBundle: Bundle.main,
