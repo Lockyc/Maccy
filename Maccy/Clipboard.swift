@@ -214,13 +214,16 @@ class Clipboard {
     // - https://github.com/p0deje/Maccy/issues/78
     // - https://github.com/p0deje/Maccy/issues/472
     var contents = [HistoryItemContent]()
+    var skippedItem = false
     pasteboard.pasteboardItems?.forEach({ item in
       var types = Set(item.types)
       if types.contains(.string) && isEmptyString(item) && !richText(item) {
+        skippedItem = true
         return
       }
 
       if shouldIgnore(item) {
+        skippedItem = true
         return
       }
 
@@ -250,7 +253,7 @@ class Clipboard {
       return
     }
 
-    if Defaults[.removeTrailingNewlines] {
+    if Defaults[.removeTrailingNewlines] && !skippedItem {
       contents = removeTrailingNewlinesOnPasteboard(contents)
     }
 
@@ -368,15 +371,19 @@ class Clipboard {
   }
 
   // Rewrites a fresh external copy without its trailing newlines, so a plain ⌘V
-  // pastes the trimmed text too. Only a copy made purely of text types is
-  // rewritten: anything else (a spreadsheet's cells, a file) would lose the types
-  // Maccy doesn't store, so it stays as the app left it.
+  // pastes the trimmed text too. Only a copy made purely of text types that Maccy
+  // stored whole is rewritten: anything else (a spreadsheet's cells, a file, HTML
+  // with HTML storage off, an item skipped at capture) would lose what Maccy
+  // didn't store, so it stays as the app left it.
   @MainActor
   private func removeTrailingNewlinesOnPasteboard(_ contents: [HistoryItemContent]) -> [HistoryItemContent] {
     // Item types, not pasteboard.types, which adds legacy aliases like NSStringPboardType.
     let types = Set(pasteboard.pasteboardItems?.flatMap(\.types) ?? [])
+    let stored = Set(contents.map(\.type))
     guard !types.contains(.fromMaccy),
-          types.allSatisfy({ rewritableTypes.contains($0) || $0.rawValue.hasPrefix("org.nspasteboard.") }) else {
+          types.allSatisfy({
+            (rewritableTypes.contains($0) && stored.contains($0.rawValue)) || $0.rawValue.hasPrefix("org.nspasteboard.")
+          }) else {
       return contents
     }
 

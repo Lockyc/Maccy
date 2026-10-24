@@ -139,6 +139,19 @@ class ClipboardTests: XCTestCase {
     XCTAssertEqual(pasteboard.string(forType: customType), "cells")
   }
 
+  func testNewCopyWithAnUnstoredTextTypeIsLeftAlone() {
+    Defaults[.removeTrailingNewlines] = true
+    defer { Defaults.reset(.removeTrailingNewlines) }
+    Defaults[.enabledPasteboardTypes] = savedEnabledTypes.subtracting([.html])
+    clipboard.onNewCopy({ _ in })
+    pasteboard.declareTypes([.string, .html], owner: nil)
+    pasteboard.setString("foo\n", forType: .string)
+    pasteboard.setString("<b>foo</b><br>", forType: .html)
+    clipboard.checkForChangesInPasteboard()
+    XCTAssertEqual(pasteboard.string(forType: .string), "foo\n")
+    XCTAssertEqual(pasteboard.string(forType: .html), "<b>foo</b><br>")
+  }
+
   func testNewCopyKeepsTrailingNewlinesWhenDisabled() {
     Defaults[.removeTrailingNewlines] = false
     defer { Defaults.reset(.removeTrailingNewlines) }
