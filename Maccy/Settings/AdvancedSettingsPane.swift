@@ -11,7 +11,7 @@ struct AdvancedSettingsPane: View {
         .fixedSize(horizontal: false, vertical: true)
         .foregroundStyle(.gray)
         .controlSize(.small)
-      Text("TurnOffShellScript", tableName: "AdvancedSettings")
+      Text(verbatim: Self.localizedSnippet("TurnOffShellScript"))
         .fixedSize(horizontal: false, vertical: true)
         .foregroundStyle(.gray)
         .font(.system(size: 11, design: .monospaced))
@@ -21,7 +21,7 @@ struct AdvancedSettingsPane: View {
         .fixedSize(horizontal: false, vertical: true)
         .foregroundStyle(.gray)
         .controlSize(.small)
-      Text("TurnOffNextShellScript", tableName: "AdvancedSettings")
+      Text(verbatim: Self.localizedSnippet("TurnOffNextShellScript"))
         .fixedSize(horizontal: false, vertical: true)
         .foregroundStyle(.gray)
         .font(.system(size: 11, design: .monospaced))
@@ -40,6 +40,17 @@ struct AdvancedSettingsPane: View {
     }
     .frame(minWidth: 350, maxWidth: 450)
     .padding()
+  }
+
+  // The translations spell upstream's defaults domain; a build under another bundle ID
+  // (the lockyc fork) shows its own, without touching every .lproj.
+  static func snippet(_ raw: String, bundleID: String) -> String {
+    raw.replacingOccurrences(of: "org.p0deje.Maccy", with: bundleID)
+  }
+
+  private static func localizedSnippet(_ key: String.LocalizationValue) -> String {
+    snippet(String(localized: key, table: "AdvancedSettings"),
+            bundleID: Bundle.main.bundleIdentifier ?? "org.p0deje.Maccy")
   }
 }
 
