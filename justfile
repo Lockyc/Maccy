@@ -22,12 +22,24 @@ default:
 
 # Build a signed Release Maccy.app into build/
 build:
+    #!/usr/bin/env bash
+    set -euo pipefail
     xcodebuild -project Maccy.xcodeproj -scheme Maccy -configuration Release \
       -derivedDataPath build -quiet \
       DEVELOPMENT_TEAM={{team}} CODE_SIGN_STYLE=Manual \
       CODE_SIGN_IDENTITY="Developer ID Application" PROVISIONING_PROFILE_SPECIFIER= \
-      OTHER_CODE_SIGN_FLAGS=--timestamp {{identity}} \
+      OTHER_CODE_SIGN_FLAGS=--timestamp CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO {{identity}} \
       build
+    # (A plain `build` otherwise injects get-task-allow, which the notary rejects.)
+    # Xcode re-signs Sparkle.framework but not the helpers inside it, which keep Sparkle's
+    # ad-hoc signature and fail notarization. Inside-out: helpers, framework, then the app,
+    # whose entitlements (the sandbox, Sparkle's mach-lookup exceptions) are kept as built.
+    sign=(codesign --force --options runtime --timestamp --sign "Developer ID Application: Lachlan Collins ({{team}})")
+    sparkle="{{app}}/Contents/Frameworks/Sparkle.framework"
+    "${sign[@]}" "$sparkle/Versions/B/XPCServices/Installer.xpc"
+    "${sign[@]}" --preserve-metadata=entitlements "$sparkle/Versions/B/XPCServices/Downloader.xpc"
+    "${sign[@]}" "$sparkle/Versions/B/Autoupdate" "$sparkle/Versions/B/Updater.app" "$sparkle"
+    "${sign[@]}" --preserve-metadata=entitlements,requirements,flags "{{app}}"
 
 # The release build lockstep.sh notarizes: Developer ID, hardened runtime, secure timestamp
 bundle: build
@@ -37,8 +49,14 @@ sparkle-bin:
     @xcodebuild -resolvePackageDependencies -project Maccy.xcodeproj -scheme Maccy -derivedDataPath build -quiet >/dev/null
     @echo "{{justfile_directory()}}/build/SourcePackages/artifacts/sparkle/Sparkle/bin"
 
+# Refuses while history under org.p0deje.Maccy awaits import: launching a local build first would
+# create the new container and the installer would then (rightly) never import over it.
+[private]
+import-guard:
+    @bash -c 'source ./install.sh; ! needs_import' || { echo "install: run ./install.sh first — it brings over your history; just install after that"; exit 1; }
+
 # Build, then replace /Applications/Maccy.app and relaunch it
-install: build
+install: import-guard build
     -osascript -e 'quit app "Maccy"'
     for _ in $(seq 30); do pgrep -x Maccy >/dev/null || break; sleep 0.1; done
     pgrep -x Maccy >/dev/null && killall -9 Maccy || true
@@ -47,9 +65,10 @@ install: build
     ditto {{app}} /Applications/Maccy.app
     for _ in 1 2 3 4 5; do open /Applications/Maccy.app && break; sleep 1; done
 
-# Pre-merge gate: lint the installer, then the full unit-test suite
+# Pre-merge gate: the full unit-test suite, then the installer's lint and tests
 gate: test
     shellcheck install.sh
+    bats fork/install.bats
 
 # Run the unit tests (ad-hoc signed; e.g. `just test MaccyTests/SharedStateTests/ClipboardTests` to narrow)
 test only="MaccyTests":
