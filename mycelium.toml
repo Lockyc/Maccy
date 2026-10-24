@@ -1,13 +1,12 @@
 name    = "Maccy"
-summary = "Personal fork of the Maccy macOS clipboard manager, built and installed locally over the upstream app — trims trailing newlines, keeps the preview open, and stores images lighter"
+summary = "The lockyc fork of the Maccy macOS clipboard manager, released and self-updating as its own app — trims trailing newlines, keeps the preview open, and stores images lighter"
 kind    = "app"
 status  = "active"
 tags    = ["clipboard", "macos", "fork"]
 stack   = ["swift", "swiftui", "swiftdata"]
 
-# Fork-only files are kept to a minimum so upstream merges stay conflict-free, and the
-# app installs from `just install`, not an installer script. A fork of someone else's
-# app stays off the lockyc profile README.
+# Fork-only files are kept to a minimum so upstream merges stay conflict-free. A fork of
+# someone else's app stays off the lockyc profile README.
 [fleet]
-exempt      = ["hookhost", "hookspath", "installer", "roadmap", "profile"]
+exempt      = ["hookhost", "hookspath", "roadmap", "profile"]
 exempt_note = "upstream fork; fork-only surface kept minimal"
