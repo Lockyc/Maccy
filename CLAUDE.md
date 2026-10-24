@@ -6,10 +6,13 @@ container's history and settings carry across).
 
 ## Branches
 
-- `master` — an untouched mirror of `upstream/master`. Never commit to it.
-- `main` — the fork: upstream plus our patches. Default branch; all work lands here.
-- `just sync` merges upstream into `main` (merge, never rebase — `main` is pushed and
-  never force-pushed).
+- `dev` — the trunk: upstream plus our patches. All work and upstream merges land here.
+- `main` — the release branch and GitHub's default; `lockstep.sh release Maccy` fast-forwards
+  it to `dev`. Never commit code to it.
+- `upstream/master` (the remote-tracking ref) is the untouched upstream; `just upstream` lists
+  what `dev` hasn't merged, `just sync` merges it into `dev` (merge, never rebase — `dev` is
+  pushed and never force-pushed). The `upstream` remote fetches no tags: fork tags are `v*`,
+  upstream's are bare, and only `v*` belong on origin.
 
 Keep the diff against upstream small: fork-only files (`justfile`, `fork/`, this file)
 are additions upstream never touches, and build config goes in `justfile` overrides

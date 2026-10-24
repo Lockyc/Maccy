@@ -40,8 +40,13 @@ test only="MaccyTests":
       DEVELOPMENT_TEAM= CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- PROVISIONING_PROFILE_SPECIFIER= \
       -only-testing:{{only}} test
 
-# Merge upstream master into main
+# Merge upstream master into dev (merge, never rebase: dev is pushed)
 sync:
+    @[ "$(git branch --show-current)" = dev ] || { echo "sync: run it on dev"; exit 1; }
     git fetch upstream
-    git push origin upstream/master:master
     git merge upstream/master
+
+# List the upstream commits dev hasn't merged yet
+upstream:
+    @git fetch -q upstream
+    @git log --oneline dev..upstream/master
