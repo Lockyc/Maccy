@@ -47,8 +47,9 @@ install: build
     ditto {{app}} /Applications/Maccy.app
     for _ in 1 2 3 4 5; do open /Applications/Maccy.app && break; sleep 1; done
 
-# Pre-merge gate: the full unit-test suite
+# Pre-merge gate: lint the installer, then the full unit-test suite
 gate: test
+    shellcheck install.sh
 
 # Run the unit tests (ad-hoc signed; e.g. `just test MaccyTests/SharedStateTests/ClipboardTests` to narrow)
 test only="MaccyTests":
