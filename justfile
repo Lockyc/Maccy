@@ -34,7 +34,7 @@ install: build
 # Pre-merge gate: the full unit-test suite
 gate: test
 
-# Run the unit tests (ad-hoc signed; pass e.g. only=MaccyTests/ClipboardTests to narrow)
+# Run the unit tests (ad-hoc signed; e.g. `just test MaccyTests/SharedStateTests/ClipboardTests` to narrow)
 test only="MaccyTests":
     xcodebuild -project Maccy.xcodeproj -scheme Maccy -derivedDataPath build/test -quiet \
       DEVELOPMENT_TEAM= CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- PROVISIONING_PROFILE_SPECIFIER= \
