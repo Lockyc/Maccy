@@ -50,9 +50,7 @@ class ApplicationImage {
         let source = DispatchSource.makeFileSystemObjectSource(
           fileDescriptor: descriptor,
           eventMask: [.write, .delete],
-          // The handler inherits the main-actor isolation of this type, and Swift 6
-          // traps if it runs anywhere else, so the source must deliver on main.
-          queue: DispatchQueue.main
+          queue: .main
         )
         eventSource = source
         source.setEventHandler {
