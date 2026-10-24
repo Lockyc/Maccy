@@ -1,8 +1,8 @@
 # Maccy — lockyc fork
 
-Personal fork of [p0deje/Maccy](https://github.com/p0deje/Maccy), built locally and
-installed over the upstream app (same bundle ID `org.p0deje.Maccy`, so the sandbox
-container's history and settings carry across).
+Personal fork of [p0deje/Maccy](https://github.com/p0deje/Maccy), released from here as
+its own app: bundle ID `com.lockyc.maccy` and the version in `VERSION`, both applied by
+`justfile` overrides (`identity`) over the project's upstream values.
 
 ## Branches
 
@@ -33,5 +33,3 @@ directly with `open "x-apple.systempreferences:com.apple.preference.security?Pri
 - **Sparkle feed.** `SUFeedURL` in `Maccy/Info.plist` points at `fork/appcast.xml`
   (an empty channel). An upstream merge that touches that key must keep the fork's
   value — upstream's feed would offer p0deje's release and overwrite the fork.
-- **Homebrew.** The `maccy` cask must stay uninstalled; `brew upgrade` would replace
-  the fork build.

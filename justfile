@@ -5,6 +5,13 @@
 # Accessibility grant (needed for paste) across rebuilds.
 team := "G9V8U6ZU5E"
 app := "build/Build/Products/Release/Maccy.app"
+info_plist := "Maccy/Info.plist"
+version := `cat VERSION`
+
+# The fork's identity, applied over the project's upstream values at build time: its own
+# bundle ID (so it installs beside upstream Maccy and never takes its updates) and its own
+# version line (VERSION; upstream's MARKETING_VERSION and build number don't apply).
+identity := "PRODUCT_BUNDLE_IDENTIFIER=com.lockyc.maccy MARKETING_VERSION=" + version + " CURRENT_PROJECT_VERSION=" + version
 
 # `default` pipes `just --list` through a small stock-perl filter that clips long recipe
 # docs to your terminal width (…) instead of wrapping. Self-contained — no external files;
@@ -19,7 +26,16 @@ build:
       -derivedDataPath build -quiet \
       DEVELOPMENT_TEAM={{team}} CODE_SIGN_STYLE=Manual \
       CODE_SIGN_IDENTITY="Developer ID Application" PROVISIONING_PROFILE_SPECIFIER= \
+      OTHER_CODE_SIGN_FLAGS=--timestamp {{identity}} \
       build
+
+# The release build lockstep.sh notarizes: Developer ID, hardened runtime, secure timestamp
+bundle: build
+
+# Print the directory holding Sparkle's sign_update and generate_keys (resolving packages first)
+sparkle-bin:
+    @xcodebuild -resolvePackageDependencies -project Maccy.xcodeproj -scheme Maccy -derivedDataPath build -quiet >/dev/null
+    @echo "{{justfile_directory()}}/build/SourcePackages/artifacts/sparkle/Sparkle/bin"
 
 # Build, then replace /Applications/Maccy.app and relaunch it
 install: build

@@ -477,6 +477,13 @@ extension SharedStateTests {
       return copies
     }
 
+    @Test("Advanced settings' pause snippets name this build's defaults domain")
+    func pauseSnippetUsesBundleIdentifier() {
+      let raw = "defaults write org.p0deje.Maccy ignoreEvents true\n# copy data\ndefaults write org.p0deje.Maccy ignoreEvents false"
+      #expect(AdvancedSettingsPane.snippet(raw, bundleID: "com.lockyc.maccy")
+        == "defaults write com.lockyc.maccy ignoreEvents true\n# copy data\ndefaults write com.lockyc.maccy ignoreEvents false")
+    }
+
     private func frontmostAppBundleIdentifier() throws -> String {
       guard let bundleIdentifier = NSWorkspace.shared.frontmostApplication?.bundleIdentifier else {
         try Test.cancel("No frontmost application to attribute a copy to")
