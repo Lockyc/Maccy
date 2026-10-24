@@ -2,8 +2,9 @@
 
 A fork of [p0deje/Maccy](https://github.com/p0deje/Maccy), the lightweight clipboard manager
 for macOS, carrying a few patches of its own. It is its own app — bundle ID `com.lockyc.maccy`,
-its own version line and its own releases — so it installs beside upstream Maccy and neither
-updates the other. For upstream Maccy, go to [maccy.app](https://maccy.app).
+its own version line and its own releases — so neither it nor upstream Maccy ever updates the
+other. Both install as `/Applications/Maccy.app`, so a Mac has one or the other. For upstream
+Maccy, go to [maccy.app](https://maccy.app).
 
 ## Differences from upstream
 
@@ -23,8 +24,8 @@ curl -fsSL https://raw.githubusercontent.com/lockyc/Maccy/main/install.sh | bash
 Needs macOS 14 or later. The installer downloads the latest release, checks that it is signed by
 this fork's developer and notarized by Apple, installs `/Applications/Maccy.app` and launches it.
 It won't replace an upstream Maccy already in `/Applications` — move that to the Trash first. A
-first install brings over the history and settings of an earlier fork build that ran under
-upstream's bundle ID. Grant Maccy Accessibility (System Settings → Privacy & Security →
+first install brings over the history and settings kept under upstream's bundle ID (by
+upstream Maccy or an earlier fork build). Grant Maccy Accessibility (System Settings → Privacy & Security →
 Accessibility) so it can paste. After that Maccy updates itself. From a clone of this repo,
 Claude Code's `/Maccy:install` runs the same install.
 

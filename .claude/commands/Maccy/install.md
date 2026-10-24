@@ -20,7 +20,7 @@ A `TeamIdentifier` other than `G9V8U6ZU5E` is upstream's Maccy, which the instal
 
 From a checkout (`[ -f install.sh ] && [ -f Maccy.xcodeproj/project.pbxproj ]`), ask with AskUserQuestion:
 - **Latest release** (recommended): `bash install.sh`
-- **This checkout's code**: `just install`
+- **This checkout's code**: `just install` (it refuses until `install.sh` has brought over any history kept under `org.p0deje.Maccy`; then run `bash install.sh` first)
 
 Outside a checkout, run `curl -fsSL https://raw.githubusercontent.com/lockyc/Maccy/main/install.sh | bash`.
 
