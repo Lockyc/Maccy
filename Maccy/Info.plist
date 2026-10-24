@@ -34,6 +34,8 @@
 	<true/>
 	<key>SUFeedURL</key>
 	<string>https://github.com/lockyc/Maccy/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>scUhCV9DKEDGNplAJo+BKG/N2gsT2qyilHHKbPY3fzU=</string>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 	<dict>
