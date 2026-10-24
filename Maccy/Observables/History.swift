@@ -105,9 +105,7 @@ class History: ItemsContainer { // swiftlint:disable:this type_body_length
 
     Task {
       for await _ in Defaults.updates(.showSpecialSymbols, initial: false) {
-        for item in items {
-          updateTitle(item: item, title: item.item.generateTitle())
-        }
+        updateTitlesForSpecialSymbols()
       }
     }
 
@@ -560,6 +558,13 @@ class History: ItemsContainer { // swiftlint:disable:this type_body_length
     }
 
     updateUnpinnedShortcuts()
+  }
+
+  @MainActor
+  private func updateTitlesForSpecialSymbols() {
+    for item in items where item.item.imageData == nil {
+      updateTitle(item: item, title: item.item.generateTitle())
+    }
   }
 
   @MainActor
