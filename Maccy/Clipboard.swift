@@ -37,6 +37,11 @@ class Clipboard {
     .rtf,
     .string
   ]
+  // Say where a copy came from, not what it holds, so the rewrite carries them as is.
+  private let provenanceTypes: Set<NSPasteboard.PasteboardType> = [
+    .chromiumSourceToken,
+    .chromiumSourceUrl
+  ]
   private let unpersistableTypes: Set<NSPasteboard.PasteboardType> = [
     .appleWebArchive,
     .safariWebArchve
@@ -372,9 +377,9 @@ class Clipboard {
 
   // Rewrites a fresh external copy without its trailing newlines, so a plain ⌘V
   // pastes the trimmed text too. Only a copy made purely of text types that Maccy
-  // stored whole is rewritten: anything else (a spreadsheet's cells, a file, HTML
-  // with HTML storage off, an item skipped at capture) would lose what Maccy
-  // didn't store, so it stays as the app left it.
+  // stored whole, plus provenance, is rewritten: anything else (a spreadsheet's
+  // cells, a file, HTML with HTML storage off, an item skipped at capture) would
+  // lose what Maccy didn't store, so it stays as the app left it.
   @MainActor
   private func removeTrailingNewlinesOnPasteboard(_ contents: [HistoryItemContent]) -> [HistoryItemContent] {
     // Item types, not pasteboard.types, which adds legacy aliases like NSStringPboardType.
@@ -382,7 +387,8 @@ class Clipboard {
     let stored = Set(contents.map(\.type))
     guard !types.contains(.fromMaccy),
           types.allSatisfy({
-            (rewritableTypes.contains($0) && stored.contains($0.rawValue)) || $0.rawValue.hasPrefix("org.nspasteboard.")
+            (rewritableTypes.contains($0) && stored.contains($0.rawValue)) ||
+              provenanceTypes.contains($0) || $0.rawValue.hasPrefix("org.nspasteboard.")
           }) else {
       return contents
     }
