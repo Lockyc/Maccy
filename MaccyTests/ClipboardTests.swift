@@ -213,6 +213,22 @@ extension SharedStateTests {
       #expect(captured == nil)
     }
 
+    @Test("New copy from a browser has trailing newlines removed")
+    func newCopyFromABrowserHasTrailingNewlinesRemoved() {
+      Defaults[.removeTrailingNewlines] = true
+      defer { Defaults.reset(.removeTrailingNewlines) }
+      clipboard.onNewCopy({ _ in })
+      pasteboard.declareTypes([.string, .html, .chromiumSourceUrl, .chromiumSourceToken], owner: nil)
+      pasteboard.setString("foo\n", forType: .string)
+      pasteboard.setString("<div>foo</div>", forType: .html)
+      pasteboard.setString("https://example.com", forType: .chromiumSourceUrl)
+      pasteboard.setString("token", forType: .chromiumSourceToken)
+      clipboard.checkForChangesInPasteboard()
+      #expect(pasteboard.string(forType: .string) == "foo")
+      #expect(pasteboard.string(forType: .chromiumSourceUrl) == "https://example.com")
+      #expect(pasteboard.string(forType: .chromiumSourceToken) == "token")
+    }
+
     @Test("New copy with other types is left alone")
     func newCopyWithOtherTypesIsLeftAlone() {
       Defaults[.removeTrailingNewlines] = true
