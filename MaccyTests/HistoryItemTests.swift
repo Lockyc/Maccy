@@ -78,7 +78,9 @@ extension SharedStateTests {
     @Test("Image title becomes the recognized text")
     func imageTitleBecomesRecognizedText() async throws {
       let item = historyItem(textImage("Hello Maccy"))
-      let deadline = ContinuousClock.now + .seconds(10)
+      // OCR runs on one serial utility-QoS queue that every image item in the parallel suites
+      // feeds, so under the full suite this one waits its turn behind theirs.
+      let deadline = ContinuousClock.now + .seconds(30)
       while item.title.isEmpty && ContinuousClock.now < deadline {
         try await Task.sleep(for: .milliseconds(100))
       }
