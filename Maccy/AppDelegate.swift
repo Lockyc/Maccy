@@ -40,7 +40,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
   // A launched app's stderr goes nowhere, and it carries both `logger` output and the
   // message of a Swift runtime abort, which crash reports omit. Send it to
-  // ~/Library/Containers/org.p0deje.Maccy/Data/Library/Logs/Maccy.log, keeping the previous
+  // Library/Logs/Maccy.log in the app's own container, keeping the previous
   // launch's log as Maccy.previous.log so the run that crashed survives the relaunch.
   private func redirectStandardErrorToLogFile() {
     guard !Self.isTesting else { return }
