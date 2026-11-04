@@ -7,6 +7,7 @@ import Observation
 import Sauce
 import Settings
 import SwiftData
+import SwiftUI
 
 @Observable
 class History: ItemsContainer { // swiftlint:disable:this type_body_length
@@ -38,12 +39,17 @@ class History: ItemsContainer { // swiftlint:disable:this type_body_length
     didSet(previousSearchQuery) {
       guard searchQuery != previousSearchQuery else { return }
       throttler.throttle { [self] in
-        updateSearchResults()
+        // Each keystroke swaps the list's contents; animating that costs more than it shows.
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+          updateSearchResults()
 
-        if searchQuery.isEmpty {
-          AppState.shared.navigator.select(item: firstUnpinnedItem)
-        } else {
-          AppState.shared.navigator.highlightFirst()
+          if searchQuery.isEmpty {
+            AppState.shared.navigator.select(item: firstUnpinnedItem)
+          } else {
+            AppState.shared.navigator.highlightFirst()
+          }
         }
 
         AppState.shared.popup.needsResize = true
