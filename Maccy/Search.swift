@@ -96,20 +96,20 @@ class Search {
     within: [Searchable],
     options: NSString.CompareOptions
   ) -> [SearchResult] {
-    return within.compactMap { simpleSearch(for: string, in: $0.title, of: $0, options: options) }
+    return within.compactMap { simpleSearch(for: string, of: $0, options: options) }
   }
 
   private func simpleSearch(
     for string: String,
-    in searchString: String,
     of item: Searchable,
     options: NSString.CompareOptions
   ) -> SearchResult? {
-    if let range = searchString.range(of: string, options: options, range: nil, locale: nil) {
-      return SearchResult(object: item, ranges: [range])
-    } else {
+    let match = item.searchableTitle.range(of: string, options: options)
+    guard match.location != NSNotFound, let range = Range(match, in: item.title) else {
       return nil
     }
+
+    return SearchResult(object: item, ranges: [range])
   }
 
   private func mixedSearch(string: String, within: [Searchable]) -> [SearchResult] {
