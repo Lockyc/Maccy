@@ -225,6 +225,20 @@ extension SharedStateTests {
       #expect(search("m") == [])
     }
 
+    @Test("Throttled search runs at once after a pause")
+    func throttledSearchRunsAtOnce() async throws {
+      let throttler = Throttler(minimumDelay: 10)
+      let clock = ContinuousClock()
+      let start = clock.now
+      var ranAt: ContinuousClock.Instant?
+      throttler.throttle { ranAt = clock.now }
+      while ranAt == nil, clock.now - start < .seconds(2) {
+        try await Task.sleep(for: .milliseconds(5))
+      }
+      let elapsed = try #require(ranAt) - start
+      #expect(elapsed < .seconds(1))
+    }
+
     private func search(_ string: String) -> [Search.SearchResult] {
       return Search().search(string: string, within: items)
     }
