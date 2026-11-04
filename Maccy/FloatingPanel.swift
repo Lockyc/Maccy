@@ -109,10 +109,7 @@ class FloatingPanel<Content: View>: NSPanel, NSWindowDelegate {
     var newOrigin = frame.origin
     newOrigin.y += (frame.height - newSize.height)
 
-    NSAnimationContext.runAnimationGroup { (context) in
-      context.duration = 0.2
-      animator().setFrame(NSRect(origin: newOrigin, size: newSize), display: true)
-    }
+    setFrame(NSRect(origin: newOrigin, size: newSize), display: true)
   }
 
   func determinePreviewPlacement() {
