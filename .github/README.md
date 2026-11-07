@@ -12,6 +12,7 @@ Maccy, go to [maccy.app](https://maccy.app).
 - **Preview always shown** beside the popup (setting, on by default).
 - **Lighter image history**: a TIFF copied alongside a PNG of the same image isn't stored
   (apps that ask for TIFF on paste still get one), and only the images on screen are loaded.
+- **Faster search** on long histories, and the list and popup no longer animate as you type.
 - **Its own releases and updates**: signed and notarized here, updated in-app by Sparkle from
   this repo's releases.
 
@@ -33,7 +34,8 @@ Claude Code's `/Maccy:install` runs the same install.
 
 Upstream is merged into this fork as it lands; a release follows when a fork change or a merged
 upstream change is worth shipping. `just upstream` lists the upstream commits not yet merged.
-Upstream's own README is at [`README.md`](../README.md).
+Upstream's own README is at [`README.md`](../README.md); where it says `org.p0deje.Maccy` (in
+`defaults write` commands), this fork is `com.lockyc.maccy`.
 
 ## License
 
