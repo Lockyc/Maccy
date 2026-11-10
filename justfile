@@ -9,7 +9,7 @@ info_plist := "Maccy/Info.plist"
 version := `cat VERSION`
 
 # The fork's identity, applied over the project's upstream values at build time: its own
-# bundle ID (so it installs beside upstream Maccy and never takes its updates) and its own
+# bundle ID (so it is its own app and never takes upstream's updates) and its own
 # version line (VERSION; upstream's MARKETING_VERSION and build number don't apply).
 identity := "PRODUCT_BUNDLE_IDENTIFIER=com.lockyc.maccy MARKETING_VERSION=" + version + " CURRENT_PROJECT_VERSION=" + version
 

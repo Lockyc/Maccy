@@ -34,7 +34,8 @@ Claude Code's `/Maccy:install` runs the same install.
 
 Upstream is merged into this fork as it lands; a release follows when a fork change or a merged
 upstream change is worth shipping. `just upstream` lists the upstream commits not yet merged.
-Upstream's own README is at [`README.md`](../README.md); where it says `org.p0deje.Maccy` (in
+Upstream's own README, at [`README.md`](../README.md), covers using Maccy. Its Install section
+installs upstream Maccy, not this fork, and where it says `org.p0deje.Maccy` (in
 `defaults write` commands), this fork is `com.lockyc.maccy`.
 
 ## License
