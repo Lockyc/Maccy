@@ -15,7 +15,7 @@ its own app: bundle ID `com.lockyc.maccy` and the version in `VERSION`, both app
   upstream's are bare, and only `v*` belong on origin.
 
 Keep the diff against upstream small: fork-only files (`justfile`, `VERSION`, `install.sh`, `fork/`,
-`mycelium.toml`, `.claude/commands/Maccy/`, `.github/README.md`, this file, and the
+`mycelium.toml`, `.github/README.md`, this file, and the
 `.gitignore` additions) are additions upstream never touches, and build config goes in `justfile` overrides rather than `Maccy.xcodeproj`. A
 fork test goes in an existing test file: a new file means a pbxproj edit.
 

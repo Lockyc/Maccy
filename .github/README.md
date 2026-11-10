@@ -27,8 +27,7 @@ this fork's developer and notarized by Apple, installs `/Applications/Maccy.app`
 It won't replace an upstream Maccy already in `/Applications` — move that to the Trash first. A
 first install brings over the history and settings kept under upstream's bundle ID (by
 upstream Maccy or an earlier fork build). Grant Maccy Accessibility (System Settings → Privacy & Security →
-Accessibility) so it can paste. After that Maccy updates itself. From a clone of this repo,
-Claude Code's `/Maccy:install` runs the same install.
+Accessibility) so it can paste. After that Maccy updates itself.
 
 ## Upstream
 
