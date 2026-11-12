@@ -44,8 +44,8 @@ struct ListItemView<Title: View, ID: Hashable>: View {
   var accessibilityLabel: String = ""
   @ViewBuilder var title: () -> Title
 
-  @Default(.showApplicationIcons) private var showIcons
   @Environment(AppState.self) private var appState
+  private var showIcons: Bool { appState.showApplicationIcons }
   @Environment(ModifierFlags.self) private var modifierFlags
 
   // Use the same selection number for the visible badge and accessibility value.

@@ -18,6 +18,13 @@ class AppState: Sendable {
   var preview: SlideoutController
 
   var isEditingItem: Bool = false
+
+  // Read by every list row. One observation each here, not a `@Default` per row: each `@Default`
+  // instance adds a KVO observer to UserDefaults, and removing one costs time linear in the
+  // observers present, so rows built and torn down on every popup open stall the main thread.
+  private(set) var showApplicationIcons = Defaults[.showApplicationIcons]
+  private(set) var showHexColorSwatch = Defaults[.showHexColorSwatch]
+
   var suppressPopupAutoClose: Bool {
     return navigator.isDragAndDropInProgress || isEditingItem
   }
@@ -54,6 +61,17 @@ class AppState: Sendable {
       })
     preview.contentWidth = Defaults[.windowSize].width
     preview.slideoutWidth = Defaults[.previewWidth]
+
+    Task { @MainActor [weak self] in
+      for await value in Defaults.updates(.showApplicationIcons) {
+        self?.showApplicationIcons = value
+      }
+    }
+    Task { @MainActor [weak self] in
+      for await value in Defaults.updates(.showHexColorSwatch) {
+        self?.showHexColorSwatch = value
+      }
+    }
   }
 
   @MainActor

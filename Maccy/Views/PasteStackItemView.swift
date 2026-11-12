@@ -21,10 +21,10 @@ struct PasteStackItemView: View {
   var index: Int?
   var isSelected: Bool
 
-  @Default(.showHexColorSwatch) private var showHexColorSwatch
+  @Environment(AppState.self) private var appState
 
   private var colorSwatchImage: NSImage? {
-    guard showHexColorSwatch else { return nil }
+    guard appState.showHexColorSwatch else { return nil }
     return ColorImage.from(item.title)
   }
 
