@@ -63,6 +63,7 @@ nonisolated extension Defaults.Keys {
   static let removeFormattingByDefault = Key<Bool>("removeFormattingByDefault", default: false, suite: preferencesSuite)
   static let removeTrailingNewlines = Key<Bool>("removeTrailingNewlines", default: true, suite: preferencesSuite)
   static let searchMode = Key<Search.Mode>("searchMode", default: .exact, suite: preferencesSuite)
+  static let searchImageText = Key<Bool>("searchImageText", default: true, suite: preferencesSuite)
   static let showFooter = Key<Bool>("showFooter", default: true, suite: preferencesSuite)
   static let showInStatusBar = Key<Bool>("showInStatusBar", default: true, suite: preferencesSuite)
   static let showRecentCopyInMenuBar = Key<Bool>("showRecentCopyInMenuBar", default: false, suite: preferencesSuite)

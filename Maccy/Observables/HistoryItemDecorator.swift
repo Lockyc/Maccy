@@ -73,7 +73,7 @@ class HistoryItemDecorator: Identifiable, Hashable, HasVisibility {
   @ObservationIgnored
   private lazy var imagePixelSize: NSSize? = item.image?.pixelSize
 
-  var hasImage: Bool { item.image != nil }
+  var hasImage: Bool { item.hasImage }
   var hasFileURLs: Bool { !item.fileURLs.isEmpty }
   var hasPlainText: Bool { item.text != nil }
   var hasRichText: Bool { item.rtf != nil || item.html != nil }

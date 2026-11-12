@@ -78,6 +78,11 @@ struct GeneralSettingsPane: View {
         .labelsHidden()
         .accessibilityLabel(Text("Search", tableName: "GeneralSettings"))
         .frame(width: 180, alignment: .leading)
+
+        Defaults.Toggle(key: .searchImageText) {
+          Text("SearchImageText", tableName: "GeneralSettings")
+        }
+        .fixedSize()
       }
 
       Settings.Section(

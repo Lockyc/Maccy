@@ -239,6 +239,27 @@ extension SharedStateTests {
       #expect(elapsed < .seconds(1))
     }
 
+    @Test("Images are left out of search when their text isn't searched")
+    func imageTextSearch() {
+      let savedSearchImageText = Defaults[.searchImageText]
+      defer { Defaults[.searchImageText] = savedSearchImageText }
+      Defaults[.searchMode] = Search.Mode.exact
+
+      let imageItem = HistoryItem()
+      Storage.shared.context.insert(imageItem)
+      imageItem.contents = [HistoryItemContent(type: NSPasteboard.PasteboardType.png.rawValue, value: Data([0]))]
+      imageItem.title = "foo in an image"
+      let image = HistoryItemDecorator(imageItem)
+      let within = items + [image]
+
+      Defaults[.searchImageText] = true
+      #expect(Search().search(string: "foo", within: within).map(\.object) == [items[0], items[1], image])
+
+      Defaults[.searchImageText] = false
+      #expect(Search().search(string: "foo", within: within).map(\.object) == [items[0], items[1]])
+      #expect(Search().search(string: "", within: within).map(\.object) == within)
+    }
+
     private func search(_ string: String) -> [Search.SearchResult] {
       return Search().search(string: string, within: items)
     }

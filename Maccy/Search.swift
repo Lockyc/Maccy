@@ -41,6 +41,9 @@ class Search {
       return within.map { SearchResult(object: $0) }
     }
 
+    // An image's title is the text recognized in it.
+    let within = Defaults[.searchImageText] ? within : within.filter { !$0.hasImage }
+
     switch Defaults[.searchMode] {
     case .mixed:
       return mixedSearch(string: string, within: within)
