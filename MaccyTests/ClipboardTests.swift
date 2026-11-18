@@ -483,9 +483,8 @@ extension SharedStateTests {
 
     // Every subset of these types, written as one copy ending in a newline, under each storage
     // setting for HTML and RTF, with and without a second, skipped (blank) item. Each image
-    // capture queues OCR on the queue HistoryItemTests' OCR test waits on, so images (none,
-    // PNG, TIFF or both) rotate across the subsets of one storage setting rather than
-    // multiplying them.
+    // capture queues OCR on the serial queue HistoryItemTests' OCR test waits on, so PNG, TIFF
+    // and both are added only to the string, RTF and HTML subsets of one storage setting.
     @Test(
       "Trailing-newline rewrite happens only for copies Maccy stored whole",
       arguments: [false, true], [false, true]
@@ -515,7 +514,10 @@ extension SharedStateTests {
       ]
       let png = (NSPasteboard.PasteboardType.png, try #require(bitmap.representation(using: .png, properties: [:])))
       let tiff = (NSPasteboard.PasteboardType.tiff, try #require(bitmap.tiffRepresentation))
-      let images = htmlStored && rtfStored ? [[], [], [png], [], [tiff], [], [png, tiff], []] : [[]]
+      let textMasks = 0..<(1 << 3)
+      let imageCases = htmlStored && rtfStored ? textMasks.flatMap { mask in
+        [[png], [tiff], [png, tiff]].map { (mask, $0) }
+      } : []
       let utf16Text = NSPasteboard.PasteboardType("public.utf16-external-plain-text")
       // The text types: AppKit adds the UTF-16 one to items that carry RTF.
       let rewritable: Set<NSPasteboard.PasteboardType> = [.string, .rtf, .html, utf16Text]
@@ -523,9 +525,10 @@ extension SharedStateTests {
       let disabled = Set<NSPasteboard.PasteboardType>([.fileURL, .html, .png, .rtf, .string, .tiff]).subtracting(enabled)
 
       for withSkippedItem in [false, true] {
-        for mask in 1..<(1 << values.count) {
-          let chosen = values.indices.filter { mask & (1 << $0) != 0 }.map { values[$0] } +
-            images[(mask >> 3) % images.count]
+        let noImage: [(NSPasteboard.PasteboardType, Data)] = []
+        let cases = (1..<(1 << values.count)).map { ($0, noImage) } + (withSkippedItem ? [] : imageCases)
+        for (mask, images) in cases {
+          let chosen = values.indices.filter { mask & (1 << $0) != 0 }.map { values[$0] } + images
           let types = Set(chosen.map(\.0))
           let item = NSPasteboardItem()
           for (type, data) in chosen { item.setData(data, forType: type) }
