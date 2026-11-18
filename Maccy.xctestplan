@@ -24,8 +24,7 @@
       "containerPath" : "container:Maccy.xcodeproj",
       "identifier" : "DAEE38421E3DBEB100DD2966",
       "name" : "Maccy"
-    },
-    "testRepetitionMode" : "retryOnFailure"
+    }
   },
   "testTargets" : [
     {
