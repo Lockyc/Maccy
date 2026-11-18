@@ -470,6 +470,23 @@ extension SharedStateTests {
       try assertStorageCounts(items: 1, contents: 1)
     }
 
+    @Test("Clearing keeps a pin made or re-copied since the last save", arguments: [0, 1, 2])
+    func clearingKeepsUnsavedPin(recopies: Int) async throws {
+      let pinned = history.add(historyItem("pinned"))
+      history.add(historyItem("unpinned"))
+      history.togglePin(pinned)
+      for _ in 0..<recopies {
+        history.add(historyItem("pinned"))
+      }
+
+      history.clear()
+
+      try assertStorageCounts(items: 1, contents: 1)
+      try await history.load()
+      #expect(history.pinnedItems.map(\.item.text) == ["pinned"])
+      #expect(history.unpinnedItems.isEmpty)
+    }
+
     private func assertStorageCounts(
       items: Int,
       contents: Int,

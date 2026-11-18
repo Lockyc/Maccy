@@ -244,6 +244,10 @@ class History: ItemsContainer { // swiftlint:disable:this type_body_length
       filteredUnpinnedItems.removeAll()
       sessionLog.removeValues { $0.pin == nil }
 
+      // The bulk deletes below match `pin` as saved in the store, so a pin made or
+      // carried over by a re-copy since the last save must be saved first.
+      Storage.shared.context.processPendingChanges()
+      try? Storage.shared.context.save()
       try? Storage.shared.context.transaction {
         try? Storage.shared.context.delete(
           model: HistoryItem.self,
