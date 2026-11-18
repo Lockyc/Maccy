@@ -487,6 +487,243 @@ extension SharedStateTests {
       #expect(history.unpinnedItems.isEmpty)
     }
 
+    // A seed that once failed goes in `regressionSeeds`, so it runs on every pass.
+    static let regressionSeeds: [UInt64] = []
+
+    @Test("Seeded command sequences keep pins, shortcuts and contents consistent")
+    func seededCommandSequences() async throws {
+      Defaults[.sortBy] = .lastCopiedAt
+      var model = HistoryModel()
+
+      // Leave two free pin keys, so pins run out of keys within a sequence.
+      let fillerCount = HistoryItem.supportedPins.count - 2
+      for index in 0..<fillerCount {
+        let filler = history.add(timedItem("filler \(index)", model: &model))
+        history.togglePin(filler)
+        model.pinned.append((text: "filler \(index)", key: filler.item.pin ?? "?"))
+      }
+      model.fillers = model.pinned.count
+      await mainQueueTurn()
+
+      for seed in Self.regressionSeeds + (0..<100).map(UInt64.init) {
+        let failures = try await runSequence(seed: seed, steps: 30, model: &model)
+        guard failures.isEmpty else {
+          Issue.record("\(failures.joined(separator: "\n"))")
+          return
+        }
+      }
+    }
+
+    // Runs one sequence from `model`'s current state, then removes the items it added.
+    // Stops at the first step whose state breaks an invariant and returns what broke,
+    // with the seed and the steps that led there.
+    private func runSequence(seed: UInt64, steps: Int, model: inout HistoryModel) async throws -> [String] {
+      var rng = SplitMix64(seed: seed)
+      var log: [String] = []
+      model.size = 4
+      Defaults[.size] = model.size
+      let pool = (0..<6).map { "value \($0)" }
+
+      for _ in 0..<steps {
+        let ownTexts = model.unpinned + model.pinned.dropFirst(model.fillers).map(\.text)
+        let target = ownTexts.isEmpty ? nil : ownTexts[Int(rng.next() % UInt64(ownTexts.count))]
+        var failures: [String] = []
+        var afterAdd = false
+        var pinned = false
+
+        switch rng.next() % 10 {
+        case 0...3:
+          let text = pool[Int(rng.next() % UInt64(pool.count))]
+          log.append("add \(text)")
+          history.add(timedItem(text, model: &model))
+          model.add(text)
+          afterAdd = true
+        case 4, 5:
+          guard let target else { continue }
+          let wasPinned = model.pinned.contains { $0.text == target }
+          let freeKeys = Set(history.availablePins)
+          log.append("togglePin \(target)")
+          let decorator = try #require(history.items.first { $0.item.text == target })
+          history.togglePin(decorator)
+          if wasPinned {
+            model.unpin(target)
+          } else {
+            let key = decorator.item.pin ?? "?"
+            if freeKeys.isEmpty ? key != "" : !freeKeys.contains(key) {
+              failures.append("pin took key '\(key)' with free keys \(freeKeys.sorted())")
+            }
+            model.pin(target, key: key)
+            pinned = true
+          }
+        case 6:
+          guard let target else { continue }
+          log.append("delete \(target)")
+          history.delete(history.items.first { $0.item.text == target })
+          model.delete(target)
+        case 7:
+          log.append("delete first unpinned")
+          history.delete(history.firstUnpinnedItem)
+          if let first = model.unpinned.first { model.delete(first) }
+        case 8:
+          model.size = Int(rng.next() % 6) + 1
+          log.append("size \(model.size)")
+          Defaults[.size] = model.size
+        default:
+          log.append("clear")
+          history.clear()
+          model.unpinned = []
+        }
+
+        if pinned {
+          await mainQueueTurn()
+        }
+        failures += try brokenInvariants(model, afterAdd: afterAdd)
+        if !failures.isEmpty {
+          return failures + ["seed \(seed), steps: \(log.joined(separator: "; "))"]
+        }
+      }
+
+      for text in model.unpinned + model.pinned.dropFirst(model.fillers).map(\.text) {
+        history.delete(history.items.first { $0.item.text == text })
+      }
+      model.unpinned = []
+      model.pinned.removeLast(model.pinned.count - model.fillers)
+      return []
+    }
+
+    private func brokenInvariants(_ model: HistoryModel, afterAdd: Bool) throws -> [String] {
+      var broken: [String] = []
+      func check(_ condition: Bool, _ message: @autoclosure () -> String) {
+        if !condition { broken.append(message()) }
+      }
+      let unpinned = history.unpinnedItems
+      let pinned = history.pinnedItems
+
+      check(unpinned.map(\.item.text) == model.unpinned.map(Optional.init),
+            "unpinned \(unpinned.map(\.item.text)) != model \(model.unpinned)")
+      check(pinned.map(\.item.text) == model.pinned.map { Optional($0.text) },
+            "pinned \(pinned.map(\.item.text)) != model \(model.pinned.map(\.text))")
+      check(pinned.map(\.item.pin) == model.pinned.map { Optional($0.key) },
+            "pin keys \(pinned.map(\.item.pin)) != model \(model.pinned.map(\.key))")
+      if afterAdd {
+        check(unpinned.count <= model.size, "\(unpinned.count) unpinned over size \(model.size)")
+      }
+
+      for (index, item) in unpinned.enumerated() {
+        let expected = index < 9 ? shortcutKeys(KeyShortcut.create(character: String(index + 1))) : []
+        check(shortcutKeys(item.shortcuts) == expected, "unpinned #\(index + 1) has \(shortcutKeys(item.shortcuts))")
+      }
+      for item in pinned {
+        let pin = item.item.pin ?? ""
+        check(shortcutKeys(item.shortcuts) == shortcutKeys(KeyShortcut.create(character: pin)),
+              "pin '\(pin)' has \(shortcutKeys(item.shortcuts))")
+      }
+      let allShortcuts = history.items.flatMap { shortcutKeys($0.shortcuts) }
+      check(Set(allShortcuts).count == allShortcuts.count, "two items share a shortcut: \(allShortcuts)")
+
+      // No save here: a save between commands would hide state that only goes wrong unsaved.
+      let context = Storage.shared.context
+      check(try context.fetchCount(FetchDescriptor<HistoryItem>()) == history.items.count,
+            "stored item count differs from the list's \(history.items.count)")
+      for item in history.items {
+        check(!item.item.contents.isEmpty, "'\(item.title)' has no contents")
+        for content in item.item.contents {
+          check(!content.isDeleted && content.modelContext != nil && content.item === item.item,
+                "'\(item.title)' lists a detached content")
+        }
+      }
+      check(try Storage.shared.cleanupOrphanedContents() == 0, "orphaned contents left in storage")
+
+      return broken
+    }
+
+    @Test("Seeded selection commands keep the lead item selected and in the list")
+    func seededSelectionSequences() throws {
+      let savedOpenPreview = Defaults[.openPreviewAutomatically]
+      Defaults[.openPreviewAutomatically] = false
+      defer { Defaults[.openPreviewAutomatically] = savedOpenPreview }
+      let appState = AppState.shared
+      let navigator = appState.navigator
+      let pool = (0..<8).map { "value \($0)" }
+
+      for seed in UInt64(0)..<50 {
+        var rng = SplitMix64(seed: seed)
+        var log: [String] = []
+        navigator.select(item: nil)
+        for text in pool.prefix(Int(rng.next() % 6) + 3) where history.items.allSatisfy({ $0.item.text != text }) {
+          history.add(historyItem(text))
+        }
+
+        for _ in 0..<15 {
+          let items = history.items.toArray()
+          let target = items.isEmpty ? nil : items[Int(rng.next() % UInt64(items.count))]
+          var deletedWithLead = false
+          switch rng.next() % 6 {
+          case 0:
+            guard let target else { continue }
+            log.append("select \(target.title)")
+            navigator.select(item: target)
+          case 1, 2:
+            // Half the time an already selected item, which takes it back out of the selection.
+            let selected = navigator.selection.items
+            let pick = rng.next() % 2 == 0 && !selected.isEmpty
+              ? selected[Int(rng.next() % UInt64(selected.count))] : target
+            guard let pick else { continue }
+            log.append("addToSelection \(pick.title)")
+            navigator.addToSelection(item: pick)
+          case 3:
+            log.append("deleteSelection")
+            deletedWithLead = navigator.leadHistoryItem != nil
+            appState.deleteSelection()
+          default:
+            log.append("togglePin selection")
+            appState.togglePin()
+          }
+
+          let context = "seed \(seed), steps: \(log.joined(separator: "; "))"
+          let listed = history.items.toArray()
+          let selected = navigator.selection.items
+          if let lead = navigator.leadHistoryItem {
+            #expect(selected.contains(lead), "lead item is not selected; \(context)")
+            #expect(listed.contains(lead), "lead item is not in the list; \(context)")
+          }
+          #expect(selected.allSatisfy(listed.contains), "a selected item is not in the list; \(context)")
+          #expect(
+            selected.enumerated().allSatisfy { $0.element.selectionIndex == $0.offset },
+            "selection indexes out of step; \(context)"
+          )
+          #expect(
+            Set(listed.filter(\.isSelected).map(\.id)) == Set(selected.map(\.id)),
+            "rows marked selected differ from the selection; \(context)"
+          )
+          if deletedWithLead && !listed.isEmpty {
+            #expect(navigator.leadHistoryItem != nil, "nothing selected after deleting with items left; \(context)")
+          }
+        }
+      }
+      navigator.select(item: nil)
+    }
+
+    // A new pin's shortcuts follow its key one main-queue turn later.
+    private func mainQueueTurn() async {
+      await withCheckedContinuation { continuation in
+        DispatchQueue.main.async { continuation.resume() }
+      }
+    }
+
+    private func shortcutKeys(_ shortcuts: [KeyShortcut]) -> [String] {
+      shortcuts.map { "\(String(describing: $0.key))+\($0.modifierFlags.rawValue)" }
+    }
+
+    private func timedItem(_ value: String, model: inout HistoryModel) -> HistoryItem {
+      model.clock += 1
+      model.lastCopied[value] = model.clock
+      let item = historyItem(value)
+      item.firstCopiedAt = Date(timeIntervalSinceReferenceDate: model.clock)
+      item.lastCopiedAt = item.firstCopiedAt
+      return item
+    }
+
     private func assertStorageCounts(
       items: Int,
       contents: Int,
@@ -533,5 +770,59 @@ extension SharedStateTests {
 
       return item
     }
+  }
+}
+
+// What History's lists should hold after each command of a sequence, with pins at the bottom
+// and unpinned items sorted by last copy.
+private struct HistoryModel {
+  var unpinned: [String] = []
+  var pinned: [(text: String, key: String)] = []
+  var fillers = 0
+  var size = 4
+  var clock: TimeInterval = 0
+  var lastCopied: [String: TimeInterval] = [:]
+
+  mutating func add(_ text: String) {
+    if pinned.contains(where: { $0.text == text }) {
+      unpinned = Array(unpinned.prefix(size))
+      return
+    }
+    unpinned.removeAll { $0 == text }
+    unpinned = Array(unpinned.prefix(size - 1))
+    unpinned.insert(text, at: 0)
+  }
+
+  // A pin with a key sorts after the other keyed pins; one without sorts last.
+  mutating func pin(_ text: String, key: String) {
+    unpinned.removeAll { $0 == text }
+    let index = key.isEmpty ? pinned.count : (pinned.lastIndex { !$0.key.isEmpty }.map { $0 + 1 } ?? 0)
+    pinned.insert((text: text, key: key), at: index)
+  }
+
+  mutating func unpin(_ text: String) {
+    pinned.removeAll { $0.text == text }
+    let copied = lastCopied[text] ?? 0
+    let index = unpinned.firstIndex { (lastCopied[$0] ?? 0) < copied } ?? unpinned.count
+    unpinned.insert(text, at: index)
+  }
+
+  mutating func delete(_ text: String) {
+    unpinned.removeAll { $0 == text }
+    pinned.removeAll { $0.text == text }
+  }
+}
+
+private struct SplitMix64: RandomNumberGenerator {
+  private var state: UInt64
+
+  init(seed: UInt64) { state = seed }
+
+  mutating func next() -> UInt64 {
+    state &+= 0x9E3779B97F4A7C15
+    var value = state
+    value = (value ^ (value >> 30)) &* 0xBF58476D1CE4E5B9
+    value = (value ^ (value >> 27)) &* 0x94D049BB133111EB
+    return value ^ (value >> 31)
   }
 }
