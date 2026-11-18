@@ -12,10 +12,16 @@ class ApplicationImage {
   private var image: NSImage?
   private var lastChecked: Date?
   private var eventSource: (any DispatchSourceFileSystemObject)?
+  private let applicationURL: (String) -> URL?
 
-  init(bundleIdentifier: String?, image: NSImage? = nil) {
+  init(
+    bundleIdentifier: String?,
+    image: NSImage? = nil,
+    applicationURL: @escaping (String) -> URL? = { NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0) }
+  ) {
     self.bundleIdentifier = bundleIdentifier
     self.image = image
+    self.applicationURL = applicationURL
   }
 
   var nsImage: NSImage {
@@ -35,9 +41,7 @@ class ApplicationImage {
     }
     lastChecked = .now
 
-    if let appURL = NSWorkspace.shared.urlForApplication(
-      withBundleIdentifier: bundleIdentifier
-    ) {
+    if let appURL = applicationURL(bundleIdentifier) {
       let img = NSWorkspace.shared.icon(forFile: appURL.path)
       image = img
 

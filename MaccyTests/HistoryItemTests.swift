@@ -191,6 +191,31 @@ extension SharedStateTests {
       #expect(content.isGone)
     }
 
+    // The watcher's event handler is main-actor isolated, so delivering it on any other
+    // queue traps the test host here, as it crashed the app.
+    @Test("App icon watcher drops the icon once the app's bundle is updated and removed", .timeLimit(.minutes(1)))
+    func appIconWatcherDropsIconOnRemoval() async throws {
+      let bundle = FileManager.default.temporaryDirectory
+        .appendingPathComponent("MaccyTests-\(UUID().uuidString).app", isDirectory: true)
+      try FileManager.default.createDirectory(at: bundle, withIntermediateDirectories: true)
+      defer { try? FileManager.default.removeItem(at: bundle) }
+      var installed = true
+      let image = ApplicationImage(bundleIdentifier: "org.maccy.tests.watched") { _ in installed ? bundle : nil }
+      let fallback = ApplicationImage(bundleIdentifier: nil).nsImage
+      #expect(image.nsImage !== fallback)
+
+      try Data("1".utf8).write(to: bundle.appendingPathComponent("Info.plist"))
+      installed = false
+      try FileManager.default.removeItem(at: bundle)
+
+      // The file events arrive from the kernel on the main queue, a few milliseconds later.
+      let deadline = ContinuousClock.now + .seconds(10)
+      while image.nsImage !== fallback, ContinuousClock.now < deadline {
+        try await Task.sleep(for: .milliseconds(10))
+      }
+      #expect(image.nsImage === fallback)
+    }
+
     private func historyItem(_ value: String?) -> HistoryItem {
       let contents = [
         HistoryItemContent(
