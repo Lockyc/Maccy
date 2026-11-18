@@ -1,4 +1,5 @@
 import Defaults
+import Observation
 import Testing
 @testable import Maccy
 
@@ -16,14 +17,25 @@ extension SharedStateTests {
       Defaults[.showHexColorSwatch] = savedShowSwatch
     }
 
-    @Test("Row settings follow their defaults")
+    @Test("Row settings follow their defaults", .timeLimit(.minutes(1)))
     func followDefaults() async throws {
       let appState = AppState.shared
-      Defaults[.showApplicationIcons] = !savedShowIcons
-      Defaults[.showHexColorSwatch] = !savedShowSwatch
-      try await Task.sleep(for: .milliseconds(100))
+      await change(of: { appState.showApplicationIcons }) {
+        Defaults[.showApplicationIcons] = !savedShowIcons
+      }
+      await change(of: { appState.showHexColorSwatch }) {
+        Defaults[.showHexColorSwatch] = !savedShowSwatch
+      }
       #expect(appState.showApplicationIcons == !savedShowIcons)
       #expect(appState.showHexColorSwatch == !savedShowSwatch)
+    }
+
+    // Returns once `property` changes after `trigger` runs, however long AppState takes.
+    private func change<T>(of property: @escaping () -> T, after trigger: () -> Void) async {
+      await withCheckedContinuation { continuation in
+        withObservationTracking { _ = property() } onChange: { continuation.resume() }
+        trigger()
+      }
     }
   }
 }

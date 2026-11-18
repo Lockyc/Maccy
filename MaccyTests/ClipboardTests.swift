@@ -47,7 +47,7 @@ extension SharedStateTests {
 
     @Test("Changes listener and add hooks")
     func changesListenerAndAddHooks() async throws {
-      let copies = try await waitForCopies(after: {
+      let copies = captureCopies(after: {
         pasteboard.declareTypes([.string], owner: nil)
         pasteboard.setString("bar", forType: .string)
       })
@@ -56,7 +56,7 @@ extension SharedStateTests {
 
     @Test("Ignore string with only spaces")
     func ignoreStringWithOnlySpaces() async throws {
-      let copies = try await waitForCopies(expectingCopy: false, after: {
+      let copies = captureCopies(after: {
         pasteboard.declareTypes([.string], owner: nil)
         pasteboard.setString(" ", forType: .string)
       })
@@ -65,7 +65,7 @@ extension SharedStateTests {
 
     @Test("Ignore string with only newlines")
     func ignoreStringWithOnlyNewlines() async throws {
-      let copies = try await waitForCopies(expectingCopy: false, after: {
+      let copies = captureCopies(after: {
         pasteboard.declareTypes([.string], owner: nil)
         pasteboard.setString("\n", forType: .string)
       })
@@ -74,7 +74,7 @@ extension SharedStateTests {
 
     @Test("Does not ignore RTF")
     func doesNotIgnoreRTF() async throws {
-      let copies = try await waitForCopies(after: {
+      let copies = captureCopies(after: {
         let rtf = NSAttributedString(string: "foo").rtf(
           from: NSRange(0...2),
           documentAttributes: [:]
@@ -87,7 +87,7 @@ extension SharedStateTests {
 
     @Test("Does not ignore HTML")
     func doesNotIgnoreHTML() async throws {
-      let copies = try await waitForCopies(after: {
+      let copies = captureCopies(after: {
         pasteboard.declareTypes([.html], owner: nil)
         pasteboard.setString("foo", forType: .html)
       })
@@ -98,7 +98,7 @@ extension SharedStateTests {
     func ignoreEventsIsEnabled() async throws {
       Defaults[.ignoreEvents] = true
 
-      let copies = try await waitForCopies(expectingCopy: false, after: {
+      let copies = captureCopies(after: {
         pasteboard.declareTypes([.string], owner: nil)
         pasteboard.setString("foo", forType: .string)
       })
@@ -110,7 +110,7 @@ extension SharedStateTests {
       Defaults[.ignoreEvents] = true
       Defaults[.ignoreOnlyNextEvent] = true
 
-      let copies = try await waitForCopies(expectingCopy: false, after: {
+      let copies = captureCopies(after: {
         pasteboard.declareTypes([.string], owner: nil)
         pasteboard.setString("foo", forType: .string)
       })
@@ -124,7 +124,7 @@ extension SharedStateTests {
     func ignoreApplication() async throws {
       Defaults[.ignoredApps] = [try frontmostAppBundleIdentifier()]
 
-      let copies = try await waitForCopies(expectingCopy: false, after: {
+      let copies = captureCopies(after: {
         pasteboard.declareTypes([.string], owner: nil)
         pasteboard.setString("bar", forType: .string)
       })
@@ -136,7 +136,7 @@ extension SharedStateTests {
       Defaults[.ignoreAllAppsExceptListed] = true
       Defaults[.ignoredApps] = [try frontmostAppBundleIdentifier()]
 
-      let copies = try await waitForCopies(after: {
+      let copies = captureCopies(after: {
         pasteboard.declareTypes([.string], owner: nil)
         pasteboard.setString("bar", forType: .string)
       })
@@ -145,7 +145,7 @@ extension SharedStateTests {
 
     @Test("Ignore transient types")
     func ignoreTransientTypes() async throws {
-      let copies = try await waitForCopies(expectingCopy: false, after: {
+      let copies = captureCopies(after: {
         pasteboard.declareTypes([.string, transientType], owner: nil)
         pasteboard.setString("bar", forType: .string)
       })
@@ -156,7 +156,7 @@ extension SharedStateTests {
     func ignoreCustomTypes() async throws {
       Defaults[.ignoredPasteboardTypes] = [customType.rawValue]
 
-      let copies = try await waitForCopies(expectingCopy: false, after: {
+      let copies = captureCopies(after: {
         pasteboard.declareTypes([.string, customType], owner: nil)
         pasteboard.setString("bar", forType: .string)
       })
@@ -165,7 +165,7 @@ extension SharedStateTests {
 
     @Test("Ignore copies with unknown types")
     func ignoreCopiesWithUnknownTypes() async throws {
-      let copies = try await waitForCopies(expectingCopy: false, after: {
+      let copies = captureCopies(after: {
         pasteboard.declareTypes([unknownType], owner: nil)
         pasteboard.setString(" ", forType: unknownType)
       })
@@ -372,7 +372,7 @@ extension SharedStateTests {
     func handlesItemsWithoutData() async throws {
       pasteboard.clearContents()
 
-      let copies = try await waitForCopies(after: {
+      let copies = captureCopies(after: {
         pasteboard.declareTypes([.fileURL, .string], owner: nil)
         // fileURL is left without data
         pasteboard.setString("bar", forType: .string)
@@ -387,7 +387,7 @@ extension SharedStateTests {
       let item2 = NSPasteboardItem()
       item2.setData(image.tiffRepresentation!, forType: .tiff)
 
-      let copies = try await waitForCopies(after: {
+      let copies = captureCopies(after: {
         pasteboard.clearContents()
         pasteboard.writeObjects([item1, item2])
       })
@@ -406,7 +406,7 @@ extension SharedStateTests {
       item.setData(try #require(bitmap.representation(using: .png, properties: [:])), forType: .png)
       item.setData(try #require(bitmap.tiffRepresentation), forType: .tiff)
 
-      let copies = try await waitForCopies(after: {
+      let copies = captureCopies(after: {
         pasteboard.clearContents()
         pasteboard.writeObjects([item])
       })
@@ -440,7 +440,7 @@ extension SharedStateTests {
       item.setData(image.tiffRepresentation!, forType: .tiff)
       item.setData("file://foo.bar".data(using: .utf8)!, forType: .fileURL)
 
-      let copies = try await waitForCopies(after: {
+      let copies = captureCopies(after: {
         pasteboard.clearContents()
         pasteboard.writeObjects([item])
       })
@@ -455,7 +455,7 @@ extension SharedStateTests {
       item.setString("foo", forType: .string)
       item.setData("".data(using: .utf8)!, forType: dynamicType)
 
-      let copies = try await waitForCopies(after: {
+      let copies = captureCopies(after: {
         pasteboard.clearContents()
         pasteboard.writeObjects([item])
       })
@@ -472,7 +472,7 @@ extension SharedStateTests {
       item.setString("hello from safari", forType: .string)
       item.setData(Data(repeating: 0x61, count: 1024 * 1024), forType: webArchive)
 
-      let copies = try await waitForCopies(after: {
+      let copies = captureCopies(after: {
         pasteboard.clearContents()
         pasteboard.writeObjects([item])
       })
@@ -482,7 +482,10 @@ extension SharedStateTests {
     }
 
     // Every subset of these types, written as one copy ending in a newline, under each storage
-    // setting for HTML and RTF, with and without a second, skipped (blank) item.
+    // setting for HTML and RTF, with and without a second, skipped (blank) item. Each image
+    // capture queues OCR on the queue HistoryItemTests' OCR test waits on, so images (none,
+    // PNG, TIFF or both) rotate across the subsets of one storage setting rather than
+    // multiplying them.
     @Test(
       "Trailing-newline rewrite happens only for copies Maccy stored whole",
       arguments: [false, true], [false, true]
@@ -508,10 +511,11 @@ extension SharedStateTests {
         (.chromiumSourceUrl, Data("https://example.com".utf8)),
         (.chromiumSourceToken, Data("token".utf8)),
         (.concealed, Data()),
-        (spreadsheet, Data("cells".utf8)),
-        (.png, try #require(bitmap.representation(using: .png, properties: [:]))),
-        (.tiff, try #require(bitmap.tiffRepresentation))
+        (spreadsheet, Data("cells".utf8))
       ]
+      let png = (NSPasteboard.PasteboardType.png, try #require(bitmap.representation(using: .png, properties: [:])))
+      let tiff = (NSPasteboard.PasteboardType.tiff, try #require(bitmap.tiffRepresentation))
+      let images = htmlStored && rtfStored ? [[], [], [png], [], [tiff], [], [png, tiff], []] : [[]]
       let utf16Text = NSPasteboard.PasteboardType("public.utf16-external-plain-text")
       // The text types: AppKit adds the UTF-16 one to items that carry RTF.
       let rewritable: Set<NSPasteboard.PasteboardType> = [.string, .rtf, .html, utf16Text]
@@ -520,7 +524,8 @@ extension SharedStateTests {
 
       for withSkippedItem in [false, true] {
         for mask in 1..<(1 << values.count) {
-          let chosen = values.indices.filter { mask & (1 << $0) != 0 }.map { values[$0] }
+          let chosen = values.indices.filter { mask & (1 << $0) != 0 }.map { values[$0] } +
+            images[(mask >> 3) % images.count]
           let types = Set(chosen.map(\.0))
           let item = NSPasteboardItem()
           for (type, data) in chosen { item.setData(data, forType: type) }
@@ -589,15 +594,12 @@ extension SharedStateTests {
       }
     }
 
-    private func waitForCopies(expectingCopy: Bool = true, after trigger: () -> Void) async throws -> [HistoryItem] {
+    // Runs the check the clipboard timer would run next, so a test never waits on the timer.
+    private func captureCopies(after trigger: () -> Void) -> [HistoryItem] {
       var copies: [HistoryItem] = []
       clipboard.onNewCopy { copies.append($0) }
-      clipboard.start()
       trigger()
-      let deadline = ContinuousClock.now + .seconds(2)
-      while (!expectingCopy || copies.isEmpty) && ContinuousClock.now < deadline {
-        try await Task.sleep(for: .milliseconds(50))
-      }
+      clipboard.checkForChangesInPasteboard()
       return copies
     }
 

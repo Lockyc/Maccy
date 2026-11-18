@@ -24,10 +24,14 @@ class Throttler {
       block()
     }
 
-    // Run at once when the previous run is at least minimumDelay ago,
-    // otherwise as soon as it will be.
-    let delay = max(0, minimumDelay - Date().timeIntervalSince(previousRun))
+    let delay = Self.delay(now: Date(), previousRun: previousRun, minimumDelay: minimumDelay)
     queue.asyncAfter(deadline: .now() + delay, execute: workItem)
+  }
+
+  // Run at once when the previous run is at least minimumDelay ago,
+  // otherwise as soon as it will be.
+  static func delay(now: Date, previousRun: Date, minimumDelay: TimeInterval) -> TimeInterval {
+    max(0, minimumDelay - now.timeIntervalSince(previousRun))
   }
 
   func cancel() {

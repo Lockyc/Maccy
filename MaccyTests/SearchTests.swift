@@ -239,6 +239,15 @@ extension SharedStateTests {
       #expect(elapsed < .seconds(1))
     }
 
+    @Test("Throttle delay is what is left of the minimum since the previous run")
+    func throttleDelay() {
+      let now = Date(timeIntervalSinceReferenceDate: 1_000)
+      #expect(Throttler.delay(now: now, previousRun: now - 10, minimumDelay: 0.2) == 0)
+      #expect(Throttler.delay(now: now, previousRun: .distantPast, minimumDelay: 0.2) == 0)
+      #expect(abs(Throttler.delay(now: now, previousRun: now - 0.05, minimumDelay: 0.2) - 0.15) < 1e-9)
+      #expect(Throttler.delay(now: now, previousRun: now, minimumDelay: 0.2) == 0.2)
+    }
+
     @Test("Images are left out of search when their text isn't searched")
     func imageTextSearch() {
       let savedSearchImageText = Defaults[.searchImageText]
