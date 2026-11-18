@@ -59,6 +59,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   }
 
   func applicationWillFinishLaunching(_ notification: Notification) { // swiftlint:disable:this function_body_length
+    // The unit tests' host app can never become active, so a run never takes the operator's focus.
+    if Self.isUnitTesting {
+      NSApp.setActivationPolicy(.prohibited)
+    }
     redirectStandardErrorToLogFile()
 
     #if DEBUG

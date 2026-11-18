@@ -335,7 +335,7 @@ class Clipboard {
   // - Chrome Remote Desktop (https://github.com/p0deje/Maccy/issues/948)
   // - Netbeans (https://github.com/p0deje/Maccy/issues/879)
   private func sync() {
-    guard let app = sourceApp,
+    guard !AppDelegate.isUnitTesting, let app = sourceApp,
           app.bundleURL?.lastPathComponent == "Chrome Remote Desktop.app" ||
             app.localizedName?.contains("NetBeans") == true else {
       return
