@@ -481,6 +481,114 @@ extension SharedStateTests {
       #expect(Set(copied.contents.map(\.type)) == [stringType.rawValue])
     }
 
+    // Every subset of these types, written as one copy ending in a newline, under each storage
+    // setting for HTML and RTF, with and without a second, skipped (blank) item.
+    @Test(
+      "Trailing-newline rewrite happens only for copies Maccy stored whole",
+      arguments: [false, true], [false, true]
+    )
+    func trailingNewlineRewriteGuard(htmlStored: Bool, rtfStored: Bool) throws {
+      Defaults[.removeTrailingNewlines] = true
+      defer { Defaults.reset(.removeTrailingNewlines) }
+      var enabled = Set(StorageType.all.types)
+      if !htmlStored { enabled.remove(.html) }
+      if !rtfStored { enabled.remove(.rtf) }
+      Defaults[.enabledPasteboardTypes] = enabled
+      Defaults.reset(.ignoredPasteboardTypes)
+      var captured: [HistoryItem] = []
+      clipboard.onNewCopy { captured.append($0) }
+
+      let bitmap = try #require(image.tiffRepresentation.flatMap(NSBitmapImageRep.init(data:)))
+      let spreadsheet = NSPasteboard.PasteboardType("org.openxmlformats.spreadsheetml.sheet")
+      let richText = NSAttributedString(string: "foo\n")
+      let values: [(NSPasteboard.PasteboardType, Data)] = [
+        (.string, Data("foo\n".utf8)),
+        (.rtf, try #require(richText.rtf(from: NSRange(location: 0, length: richText.length), documentAttributes: [:]))),
+        (.html, Data("<p>foo</p>".utf8)),
+        (.chromiumSourceUrl, Data("https://example.com".utf8)),
+        (.chromiumSourceToken, Data("token".utf8)),
+        (.concealed, Data()),
+        (spreadsheet, Data("cells".utf8)),
+        (.png, try #require(bitmap.representation(using: .png, properties: [:]))),
+        (.tiff, try #require(bitmap.tiffRepresentation))
+      ]
+      let utf16Text = NSPasteboard.PasteboardType("public.utf16-external-plain-text")
+      // The text types: AppKit adds the UTF-16 one to items that carry RTF.
+      let rewritable: Set<NSPasteboard.PasteboardType> = [.string, .rtf, .html, utf16Text]
+      let provenance: Set<NSPasteboard.PasteboardType> = [.chromiumSourceUrl, .chromiumSourceToken]
+      let disabled = Set<NSPasteboard.PasteboardType>([.fileURL, .html, .png, .rtf, .string, .tiff]).subtracting(enabled)
+
+      for withSkippedItem in [false, true] {
+        for mask in 1..<(1 << values.count) {
+          let chosen = values.indices.filter { mask & (1 << $0) != 0 }.map { values[$0] }
+          let types = Set(chosen.map(\.0))
+          let item = NSPasteboardItem()
+          for (type, data) in chosen { item.setData(data, forType: type) }
+          var items = [item]
+          if withSkippedItem {
+            let blank = NSPasteboardItem()
+            blank.setString("  ", forType: .string)
+            items.append(blank)
+          }
+          pasteboard.clearContents()
+          pasteboard.writeObjects(items)
+          let before = pasteboardSnapshot()
+          let changeCount = pasteboard.changeCount
+          captured = []
+
+          // The types the pasteboard reports, which include those AppKit derives from the ones written.
+          let pasteboardItems = pasteboard.pasteboardItems ?? []
+          let mainTypes = Set(pasteboardItems.first?.types ?? [])
+          let itemTypes = Set(pasteboardItems.flatMap(\.types))
+          let storedTypes = mainTypes.subtracting(disabled)
+          let isCaptured = !itemTypes.contains(.concealed) &&
+            !Set(pasteboard.types ?? []).isDisjoint(with: enabled) && !storedTypes.isEmpty
+          // Clipboard's rule: a copy made purely of text types Maccy stored whole, plus provenance.
+          let expectRewrite = isCaptured && !withSkippedItem && storedTypes.contains(.string) &&
+            itemTypes.allSatisfy {
+              (rewritable.contains($0) && storedTypes.contains($0)) ||
+                provenance.contains($0) || $0.rawValue.hasPrefix("org.nspasteboard.")
+            }
+
+          clipboard.checkForChangesInPasteboard()
+
+          let rewritten = pasteboard.changeCount != changeCount
+          let label = "types \(types.map(\.rawValue).sorted()), item types \(itemTypes.map(\.rawValue).sorted()), " +
+            "skipped item \(withSkippedItem), " +
+            "HTML stored \(htmlStored), RTF stored \(rtfStored), got \(captured.first?.contents.map(\.type) ?? [])"
+
+          #expect(captured.count == (isCaptured ? 1 : 0), "captured; \(label)")
+          #expect(rewritten == expectRewrite, "rewritten; \(label)")
+          if let copy = captured.first {
+            let stored = Set(copy.contents.map(\.type))
+            #expect(!(stored.contains(NSPasteboard.PasteboardType.png.rawValue) &&
+                      stored.contains(NSPasteboard.PasteboardType.tiff.rawValue)), "PNG and TIFF both stored; \(label)")
+          }
+          if !rewritten {
+            #expect(pasteboardSnapshot() == before, "left alone but changed; \(label)")
+            continue
+          }
+          // Rich text comes back as one trimmed RTF; every other type is carried over as is.
+          #expect(pasteboard.string(forType: .string) == "foo", "string; \(label)")
+          if let utf16 = pasteboard.data(forType: utf16Text) {
+            #expect(String(data: utf16, encoding: .utf16) == "foo", "UTF-16 text; \(label)")
+          }
+          #expect(pasteboard.data(forType: .html) == nil, "HTML; \(label)")
+          let rtf = pasteboard.data(forType: .rtf).flatMap { NSAttributedString(rtf: $0, documentAttributes: nil) }
+          #expect(rtf?.string == (types.isDisjoint(with: [.rtf, .html]) ? nil : "foo"), "RTF; \(label)")
+          for (type, data) in chosen where !rewritable.contains(type) {
+            #expect(pasteboard.data(forType: type) == data, "\(type.rawValue) carried over; \(label)")
+          }
+        }
+      }
+    }
+
+    private func pasteboardSnapshot() -> [[String: Data]] {
+      (pasteboard.pasteboardItems ?? []).map { item in
+        Dictionary(uniqueKeysWithValues: item.types.map { ($0.rawValue, item.data(forType: $0) ?? Data()) })
+      }
+    }
+
     private func waitForCopies(expectingCopy: Bool = true, after trigger: () -> Void) async throws -> [HistoryItem] {
       var copies: [HistoryItem] = []
       clipboard.onNewCopy { copies.append($0) }

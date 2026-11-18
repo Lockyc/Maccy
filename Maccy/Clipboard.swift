@@ -35,7 +35,8 @@ class Clipboard {
   private let rewritableTypes: Set<NSPasteboard.PasteboardType> = [
     .html,
     .rtf,
-    .string
+    .string,
+    .utf16ExternalPlainText
   ]
   // Say where a copy came from, not what it holds, so the rewrite carries them as is.
   private let provenanceTypes: Set<NSPasteboard.PasteboardType> = [
@@ -347,7 +348,8 @@ class Clipboard {
 
   // Returns new contents rather than mutating, so the stored history item keeps its
   // original text. HTML can't be trimmed in place, so rich text comes out as a single
-  // trimmed RTF, built from the RTF when there is one and the HTML otherwise.
+  // trimmed RTF, built from the RTF when there is one and the HTML otherwise. The UTF-16
+  // copy of the text is dropped: the pasteboard derives it from the trimmed string.
   private func removeTrailingNewlines(_ contents: [HistoryItemContent]) -> [HistoryItemContent] {
     guard let string = contents.first(where: { NSPasteboard.PasteboardType($0.type) == .string })
       .flatMap({ $0.value })
@@ -362,7 +364,7 @@ class Clipboard {
       switch NSPasteboard.PasteboardType(content.type) {
       case .string:
         return HistoryItemContent(type: content.type, value: trimmed.data(using: .utf8))
-      case .rtf, .html:
+      case .rtf, .html, .utf16ExternalPlainText:
         return nil
       default:
         return content
