@@ -216,6 +216,12 @@ extension SharedStateTests {
       #expect(image.nsImage === fallback)
     }
 
+    @Test("hasImage answers from the content types")
+    func hasImageFromTypes() {
+      #expect(historyItem(Data([0x89, 0x50]), .png).hasImage)
+      #expect(!historyItem("text").hasImage)
+    }
+
     private func historyItem(_ value: String?) -> HistoryItem {
       let contents = [
         HistoryItemContent(

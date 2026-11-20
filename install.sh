@@ -14,8 +14,10 @@ old_data=${MACCY_OLD_DATA:-$HOME/Library/Containers/org.p0deje.Maccy/Data/Librar
 new_data=${MACCY_NEW_DATA:-$HOME/Library/Containers/com.lockyc.maccy/Data/Library}
 team=G9V8U6ZU5E
 target="$app_dir/Maccy.app"
-# Left in the new container while an import runs, so one that stops partway is retried.
-import_marker=.lockyc-import-pending
+# Present while an import runs, so one that stops partway is retried. Outside the new container
+# and written before the launch that creates it: a run stopped between the two must still read
+# as pending.
+import_marker=${MACCY_IMPORT_MARKER:-$HOME/Library/Application Support/com.lockyc.maccy-installer/import-pending}
 
 fail() {
     echo "Maccy: $*" >&2
@@ -41,7 +43,7 @@ quit_maccy() {
 # first install) or holds an import that didn't finish. Never over the new app's own data.
 needs_import() {
     [ -d "$old_data/Application Support/Maccy" ] || return 1
-    [ ! -d "$new_data" ] || [ -e "$new_data/$import_marker" ]
+    [ ! -d "$new_data" ] || [ -e "$import_marker" ]
 }
 
 # Brings the clipboard history and settings of the org.p0deje.Maccy container into the new one.
@@ -50,12 +52,12 @@ needs_import() {
 # through `defaults import`, which writes via cfprefsd rather than behind its cache.
 import_old_data() {
     echo "→ bringing over your history and settings"
+    { mkdir -p "$(dirname "$import_marker")" && touch "$import_marker"; } || fail "couldn't write $import_marker."
     if [ ! -d "$new_data/Application Support" ]; then
         open -g -j "$target" || fail "$target didn't launch to create its data folder."
         for _ in $(seq 40); do [ -d "$new_data/Application Support" ] && break; sleep 0.25; done
         [ -d "$new_data/Application Support" ] || fail "Maccy's data folder never appeared at $new_data."
     fi
-    touch "$new_data/$import_marker" || fail "couldn't write to $new_data."
     quit_maccy
     rm -rf "$new_data/Application Support/Maccy" || fail "couldn't clear $new_data/Application Support/Maccy."
     ditto "$old_data/Application Support/Maccy" "$new_data/Application Support/Maccy" ||
@@ -64,7 +66,8 @@ import_old_data() {
         defaults import "$new_data/Preferences/com.lockyc.maccy" "$old_data/Preferences/org.p0deje.Maccy.plist" ||
             fail "couldn't bring over your settings. Re-run to try again."
     fi
-    rm -f "$new_data/$import_marker"
+    rm -f "$import_marker"
+    rmdir "$(dirname "$import_marker")" 2>/dev/null || true
     echo "  imported from $old_data (left in place)"
 }
 

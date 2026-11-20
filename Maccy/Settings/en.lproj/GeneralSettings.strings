@@ -13,7 +13,6 @@
 "Behavior" = "Behavior:";
 "PasteAutomatically" = "Paste automatically";
 "PasteWithoutFormatting" = "Paste without formatting";
-"RemoveTrailingNewlines" = "Remove trailing newlines";
 "Modifiers" = "Customize the behavior when selecting item:\n• Select with %@ pressed to copy item.\n• Select with %@ pressed to copy and paste item.\n• Select with %@ pressed to copy, clear formatting, and paste item.";
 "Search" = "Search:";
 "Exact" = "Exact";
@@ -21,4 +20,3 @@
 "Regex" = "Regular expressions";
 "Mixed" = "Mixed";
 "NotificationsAndSounds" = "Notifications and sounds 􀱁";
-"SearchImageText" = "Search text in images";

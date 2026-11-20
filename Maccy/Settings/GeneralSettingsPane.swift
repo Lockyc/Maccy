@@ -80,7 +80,8 @@ struct GeneralSettingsPane: View {
         .frame(width: 180, alignment: .leading)
 
         Defaults.Toggle(key: .searchImageText) {
-          Text("SearchImageText", tableName: "GeneralSettings")
+          // Fork-only labels carry their English in code: no other locale's table has the key.
+          Text(String(localized: "SearchImageText", defaultValue: "Search text in images", table: "GeneralSettings"))
         }
         .fixedSize()
       }
@@ -102,7 +103,7 @@ struct GeneralSettingsPane: View {
         .fixedSize()
 
         Defaults.Toggle(key: .removeTrailingNewlines) {
-          Text("RemoveTrailingNewlines", tableName: "GeneralSettings")
+          Text(String(localized: "RemoveTrailingNewlines", defaultValue: "Remove trailing newlines", table: "GeneralSettings"))
         }
         .fixedSize()
 

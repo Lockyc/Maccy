@@ -108,7 +108,8 @@ struct AppearanceSettingsPane: View {
 
       Settings.Section(title: "") {
         Defaults.Toggle(key: .previewAlwaysOpen) {
-          Text("PreviewAlwaysOpen", tableName: "AppearanceSettings")
+          // Fork-only label: its English is in code, since no other locale's table has the key.
+          Text(String(localized: "PreviewAlwaysOpen", defaultValue: "Always show Preview", table: "AppearanceSettings"))
         }
         Defaults.Toggle(key: .openPreviewAutomatically) {
           Text("OpenPreviewAutomatically", tableName: "AppearanceSettings")

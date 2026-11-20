@@ -184,8 +184,11 @@ class HistoryItem {
     return data
   }
 
-  // Answers without reading a Universal Clipboard file or decoding the image, so search can ask it per keystroke.
-  var hasImage: Bool { contentData(Self.imageTypes) != nil || universalClipboardImage }
+  // Answers from the contents' types alone: no image data (external storage), Universal Clipboard
+  // file or decoding is read, so search can ask it of every item per keystroke.
+  var hasImage: Bool {
+    liveContents.contains { Self.imageTypes.contains(NSPasteboard.PasteboardType($0.type)) } || universalClipboardImage
+  }
 
   var image: NSImage? {
     if let img = cachedDecodedImage {
