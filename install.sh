@@ -126,7 +126,8 @@ main() {
 
     open "$target" || fail "$target didn't launch."
     echo "✓ Maccy $version is in $target and running in the menu bar."
-    echo "  Grant it Accessibility (System Settings > Privacy & Security > Accessibility) so it can paste."
+    echo "  Grant it Accessibility so it can paste; this opens the setting:"
+    echo "    open \"x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility\""
 }
 
 # Sourced by fork/install.bats for needs_import; run (or piped to bash), it installs.

@@ -34,8 +34,13 @@ this fork's developer and notarized by Apple, installs `/Applications/Maccy.app`
 Both this fork and upstream install as `/Applications/Maccy.app`, so a Mac has one or the other:
 the installer won't replace an upstream Maccy — move that to the Trash first. A first install
 brings over the history and settings kept under upstream's bundle ID. Grant Maccy Accessibility
-(System Settings → Privacy & Security → Accessibility) so it can paste. After that Maccy updates
-itself.
+so it can paste; this opens the setting:
+
+```bash
+open "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+```
+
+After that Maccy updates itself.
 
 ## Using Maccy
 
