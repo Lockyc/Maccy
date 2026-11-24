@@ -258,7 +258,7 @@ class HistoryItem {
       .compactMap { $0.value }
   }
 
-  nonisolated private static let textRecognitionQueue = DispatchQueue(
+  nonisolated static let textRecognitionQueue = DispatchQueue(
     label: "org.p0deje.Maccy.textRecognition",
     qos: .utility
   )

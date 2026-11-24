@@ -77,14 +77,20 @@ extension SharedStateTests {
 
     @Test("Image title becomes the recognized text")
     func imageTitleBecomesRecognizedText() async throws {
+      // OCR runs on one serial queue that every image item feeds, so the deadline starts once
+      // the jobs earlier tests queued have run.
+      let drainStart = ContinuousClock.now
+      await withCheckedContinuation { continuation in
+        HistoryItem.textRecognitionQueue.async { continuation.resume() }
+      }
+      let drained = ContinuousClock.now - drainStart
       let item = historyItem(textImage("Hello Maccy"))
-      // OCR runs on one serial utility-QoS queue that every image item in the parallel suites
-      // feeds, so under the full suite this one waits its turn behind theirs.
-      let deadline = ContinuousClock.now + .seconds(30)
+      let start = ContinuousClock.now
+      let deadline = start + .seconds(30)
       while item.title.isEmpty && ContinuousClock.now < deadline {
         try await Task.sleep(for: .milliseconds(100))
       }
-      #expect(item.title == "Hello Maccy")
+      #expect(item.title == "Hello Maccy", "drain \(drained), own \(ContinuousClock.now - start)")
     }
 
     @Test("Title for file", arguments: ["/tmp/foo.bar", "/tmp/产品培训/产品培训.txt"])
