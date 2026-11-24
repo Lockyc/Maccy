@@ -364,7 +364,7 @@ class Clipboard {
       switch NSPasteboard.PasteboardType(content.type) {
       case .string:
         return HistoryItemContent(type: content.type, value: trimmed.data(using: .utf8))
-      case .rtf, .html, .utf16ExternalPlainText:
+      case let type where rewritableTypes.contains(type):
         return nil
       default:
         return content
