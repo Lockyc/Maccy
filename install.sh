@@ -8,16 +8,18 @@
 # MACCY_OLD_DATA and MACCY_NEW_DATA the two containers' Data/Library folders.
 set -euo pipefail
 
+# The fork's signing team and bundle ID. The justfile reads both from here.
+team=G9V8U6ZU5E
+bundle_id=com.lockyc.maccy
 zip_url=${MACCY_ZIP_URL:-https://github.com/lockyc/Maccy/releases/latest/download/Maccy.zip}
 app_dir=${MACCY_APP_DIR:-/Applications}
 old_data=${MACCY_OLD_DATA:-$HOME/Library/Containers/org.p0deje.Maccy/Data/Library}
-new_data=${MACCY_NEW_DATA:-$HOME/Library/Containers/com.lockyc.maccy/Data/Library}
-team=G9V8U6ZU5E
+new_data=${MACCY_NEW_DATA:-$HOME/Library/Containers/$bundle_id/Data/Library}
 target="$app_dir/Maccy.app"
 # Present while an import runs, so one that stops partway is retried. Outside the new container
 # and written before the launch that creates it: a run stopped between the two must still read
 # as pending.
-import_marker=${MACCY_IMPORT_MARKER:-$HOME/Library/Application Support/com.lockyc.maccy-installer/import-pending}
+import_marker=${MACCY_IMPORT_MARKER:-$HOME/Library/Application Support/$bundle_id-installer/import-pending}
 
 fail() {
     echo "Maccy: $*" >&2
@@ -63,7 +65,7 @@ import_old_data() {
     ditto "$old_data/Application Support/Maccy" "$new_data/Application Support/Maccy" ||
         fail "couldn't copy your history into $new_data. Re-run to try again."
     if [ -f "$old_data/Preferences/org.p0deje.Maccy.plist" ]; then
-        defaults import "$new_data/Preferences/com.lockyc.maccy" "$old_data/Preferences/org.p0deje.Maccy.plist" ||
+        defaults import "$new_data/Preferences/$bundle_id""$old_data/Preferences/org.p0deje.Maccy.plist" ||
             fail "couldn't bring over your settings. Re-run to try again."
     fi
     rm -f "$import_marker"

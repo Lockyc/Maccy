@@ -1,9 +1,11 @@
 # Fork tooling. Upstream has no justfile; keep fork-only build logic here, not in
 # Maccy.xcodeproj, so upstream merges stay conflict-free.
 
-# Developer ID team that signs local builds. A stable signature keeps the
-# Accessibility grant (needed for paste) across rebuilds.
-team := "G9V8U6ZU5E"
+# Developer ID team that signs local builds, and the fork's bundle ID: both named once, in
+# install.sh, which checks downloads against them and must stand alone for `curl | bash`.
+# A stable signature keeps the Accessibility grant (needed for paste) across rebuilds.
+team := `bash -c 'source ./install.sh; echo "$team"'`
+bundle_id := `bash -c 'source ./install.sh; echo "$bundle_id"'`
 app := "build/Build/Products/Release/Maccy.app"
 info_plist := "Maccy/Info.plist"
 version := `cat VERSION`
@@ -11,7 +13,7 @@ version := `cat VERSION`
 # The fork's identity, applied over the project's upstream values at build time: its own
 # bundle ID (so it is its own app and never takes upstream's updates) and its own
 # version line (VERSION; upstream's MARKETING_VERSION and build number don't apply).
-identity := "PRODUCT_BUNDLE_IDENTIFIER=com.lockyc.maccy MARKETING_VERSION=" + version + " CURRENT_PROJECT_VERSION=" + version
+identity := "PRODUCT_BUNDLE_IDENTIFIER=" + bundle_id + " MARKETING_VERSION=" + version + " CURRENT_PROJECT_VERSION=" + version
 
 # `default` pipes `just --list` through a small stock-perl filter that clips long recipe
 # docs to your terminal width (…) instead of wrapping. Self-contained — no external files;

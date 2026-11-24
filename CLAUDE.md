@@ -28,7 +28,7 @@ history and settings of the old `org.p0deje.Maccy` container). A release is
 `just bundle`, `info_plist` and `just sparkle-bin`; it publishes `Maccy.zip` and the
 `appcast.xml` the app's `SUFeedURL` reads.
 
-Signing is the Developer ID identity named by `team` in `justfile`. Changing the
+Signing is the Developer ID identity named by `team` in `install.sh`. Changing the
 signing identity invalidates the Accessibility grant, which Maccy needs to paste
 (System Settings → Privacy & Security → Device Control and Data Access; opens
 directly with `open "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"`).
