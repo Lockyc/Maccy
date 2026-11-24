@@ -112,7 +112,7 @@ main() {
     in_dir "$app_dir" rm -rf "$old"
     if [ -e "$target" ]; then
         in_dir "$app_dir" mv "$target" "$old" ||
-            fail "couldn't move the old $target aside. Allow your terminal in System Settings > Privacy & Security > App Management, or drag the old app to the Trash, then re-run."
+            fail "couldn't move the old $target aside. Allow your terminal App Management (open \"x-apple.systempreferences:com.apple.preference.security?Privacy_AppBundles\" opens the setting), or drag the old app to the Trash, then re-run."
     fi
     if ! in_dir "$app_dir" mv "$staged" "$target"; then
         [ ! -e "$old" ] || in_dir "$app_dir" mv "$old" "$target" || true
