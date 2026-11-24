@@ -487,6 +487,45 @@ extension SharedStateTests {
       #expect(history.unpinnedItems.isEmpty)
     }
 
+    // "unsaved" is an item inserted into the context but neither saved nor listed.
+    @Test("A removed image item stays removed once its text is recognized",
+          arguments: ["delete", "clear", "clearAll", "unsaved"])
+    func removedImageStaysRemovedAfterOCR(removal: String) async throws {
+      let image = NSImage(size: NSSize(width: 360, height: 100), flipped: false) { rect in
+        NSColor.white.setFill()
+        rect.fill()
+        NSAttributedString(string: "Removed", attributes: [.font: NSFont.boldSystemFont(ofSize: 48)])
+          .draw(at: NSPoint(x: 20, y: 20))
+        return true
+      }
+      let item = HistoryItem()
+      Storage.shared.context.insert(item)
+      let tiff = NSPasteboard.PasteboardType.tiff.rawValue
+      item.contents = [HistoryItemContent(type: tiff, value: image.tiffRepresentation)]
+      item.numberOfCopies = 1
+      item.title = item.generateTitle()
+      switch removal {
+      case "delete":
+        history.delete(history.add(item))
+      case "clear":
+        history.add(item)
+        history.clear()
+      case "clearAll":
+        history.add(item)
+        history.clearAll()
+      default:
+        history.clearAll()
+      }
+      try assertStorageCounts(items: 0, contents: 0)
+
+      let deadline = ContinuousClock.now + .seconds(60)
+      while item.title.isEmpty && ContinuousClock.now < deadline {
+        try await Task.sleep(for: .milliseconds(100))
+      }
+      try #require(item.title == "Removed")
+      try assertStorageCounts(items: 0, contents: 0)
+    }
+
     // A seed that once failed goes in `regressionSeeds`, so it runs on every pass.
     static let regressionSeeds: [UInt64] = []
 
@@ -623,8 +662,9 @@ extension SharedStateTests {
 
       // No save here: a save between commands would hide state that only goes wrong unsaved.
       let context = Storage.shared.context
-      check(try context.fetchCount(FetchDescriptor<HistoryItem>()) == history.items.count,
-            "stored item count differs from the list's \(history.items.count)")
+      let storedItems = try context.fetch(FetchDescriptor<HistoryItem>())
+      check(storedItems.count == history.items.count,
+            "stored items \(storedItems.map(\.title)) differ from the list's \(history.items.map(\.title))")
       for item in history.items {
         check(!item.item.contents.isEmpty, "'\(item.title)' has no contents")
         for content in item.item.contents {

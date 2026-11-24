@@ -282,6 +282,9 @@ class History: ItemsContainer { // swiftlint:disable:this type_body_length
 
       do {
         let context = Storage.shared.context
+        // The bulk deletes below reach only saved rows, so an unsaved insert is saved first.
+        context.processPendingChanges()
+        try context.save()
         try context.transaction {
           // Bulk deletion cannot remove children with live inverse relationships.
           try context.delete(
