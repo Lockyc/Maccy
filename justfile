@@ -67,7 +67,7 @@ install: import-guard build
     ditto {{app}} /Applications/Maccy.app
     @# the commit this build came from: lets a later release (lockstep.sh) tell whether it is newer before replacing it
     xattr -w com.lockyc.build-commit "$(git rev-parse HEAD)$(git status --porcelain | grep -q . && echo -dirty)" /Applications/Maccy.app
-    for _ in 1 2 3 4 5; do open /Applications/Maccy.app && break; sleep 1; done
+    for _ in 1 2 3 4 5; do open -g -j /Applications/Maccy.app && break; sleep 1; done
 
 # Pre-merge gate: the full unit-test suite, then the installer's lint and tests
 gate: test
