@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/github/license/lockyc/Maccy)](../LICENSE)
 
 [Maccy](https://github.com/p0deje/Maccy), the lightweight clipboard manager for macOS, with a few
-changes: trailing newlines stripped, the preview always open, lighter image history and faster
+changes: trailing newlines stripped, a global plain-paste shortcut, the preview always open, lighter image history and faster
 search on long histories. Pick this fork if those suit you. You give up installing with Homebrew
 and upstream's own update channel, and an upstream change reaches you once it's merged here and
 released. For upstream Maccy, go to [maccy.app](https://maccy.app).
@@ -18,6 +18,8 @@ released. For upstream Maccy, go to [maccy.app](https://maccy.app).
 - **Lighter image history**: a TIFF copied alongside a PNG of the same image isn't stored (apps
   that ask for TIFF on paste still get one), and only the images on screen are loaded.
 - **Faster search** on long histories, and the list and popup don't animate as you type.
+- **Paste plain from anywhere**: a global shortcut, set under *General → Paste plain*, pastes the
+  last thing you copied without formatting, in any app.
 - **Search can skip images**: turn off *Search text in images* to leave images out of results.
 - **Its own app**: bundle ID `com.lockyc.maccy`, its own version line, and releases signed,
   notarized and delivered in-app by Sparkle from this repo. Neither it nor upstream ever updates
