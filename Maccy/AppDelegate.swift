@@ -138,6 +138,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   func applicationDidFinishLaunching(_ aNotification: Notification) {
     migrateUserDefaults()
     disableUnusedGlobalHotkeys()
+    KeyboardShortcuts.onKeyDown(for: .pasteWithoutFormatting) {
+      AppState.shared.history.pasteNewestWithoutFormatting()
+    }
 
     panel = FloatingPanel(
       contentRect: NSRect(origin: .zero, size: Defaults[.windowSize]),

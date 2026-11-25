@@ -40,6 +40,23 @@ extension SharedStateTests {
       #expect(history.items.toArray() == [second, first])
     }
 
+    @Test("Newest item is the last copied, across sort order and pins")
+    func newestItem() {
+      let old = historyItem("old")
+      old.lastCopiedAt = Date(timeIntervalSinceReferenceDate: 1)
+      let pinned = historyItem("pinned")
+      pinned.lastCopiedAt = Date(timeIntervalSinceReferenceDate: 2)
+      let recopied = historyItem("recopied")
+      recopied.firstCopiedAt = Date(timeIntervalSinceReferenceDate: 0)
+      recopied.lastCopiedAt = Date(timeIntervalSinceReferenceDate: 3)
+      history.add(old)
+      history.togglePin(history.add(pinned))
+      let newest = history.add(recopied)
+
+      #expect(history.firstUnpinnedItem != newest)
+      #expect(history.newestItem == newest)
+    }
+
     @Test("Adding persisted duplicate")
     func addingPersistedDuplicate() throws {
       let first = historyItem("foo")

@@ -34,6 +34,11 @@ class History: ItemsContainer { // swiftlint:disable:this type_body_length
 
   var firstPinnedItem: HistoryItemDecorator? { pinnedItems.first }
   var firstUnpinnedItem: HistoryItemDecorator? { unpinnedItems.first }
+  /// The last thing copied, pinned or not, whatever the list's sort order or search: the
+  /// clipboard's contents unless Maccy ignored the latest copy.
+  var newestItem: HistoryItemDecorator? {
+    (allPinnedItems + allUnpinnedItems).max { $0.item.lastCopiedAt < $1.item.lastCopiedAt }
+  }
 
   var searchQuery: String = "" {
     didSet(previousSearchQuery) {
@@ -388,6 +393,19 @@ class History: ItemsContainer { // swiftlint:disable:this type_body_length
     Task {
       searchQuery = ""
     }
+  }
+
+  /// The global `pasteWithoutFormatting` shortcut: pastes `newestItem` as plain text, leaving
+  /// the plain version on the clipboard, as choosing it in the popup with ⌥⇧ does.
+  @MainActor
+  func pasteNewestWithoutFormatting() {
+    guard let item = newestItem else {
+      logger.info("Paste without formatting: history is empty")
+      return
+    }
+
+    Clipboard.shared.copy(item.item, removeFormatting: true)
+    Clipboard.shared.paste()
   }
 
   @MainActor

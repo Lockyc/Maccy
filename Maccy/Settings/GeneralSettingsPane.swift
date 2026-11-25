@@ -46,6 +46,21 @@ struct GeneralSettingsPane: View {
           .accessibilityLabel(Text("Open", tableName: "GeneralSettings"))
       }
 
+      // Fork-only labels carry their English in code: no other locale's table has the key.
+      Settings.Section(label: {
+        Text(String(localized: "PasteWithoutFormatting", defaultValue: "Paste plain:", table: "GeneralSettings"))
+      }) {
+        KeyboardShortcuts.Recorder(for: .pasteWithoutFormatting)
+          .help(Text(String(
+            localized: "PasteWithoutFormattingTooltip",
+            defaultValue: "Global shortcut key to paste the last copied item without formatting, in any app.",
+            table: "GeneralSettings"
+          )))
+          .accessibilityLabel(Text(String(
+            localized: "PasteWithoutFormatting", defaultValue: "Paste plain:", table: "GeneralSettings"
+          )))
+      }
+
       Settings.Section(label: { Text("Pin", tableName: "GeneralSettings") }) {
         KeyboardShortcuts.Recorder(for: .pin)
           .help(Text("PinTooltip", tableName: "GeneralSettings"))
